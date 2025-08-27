@@ -1,20 +1,40 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+// /App.tsx
+import 'react-native-gesture-handler';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Layout from './pages/Layout';
+import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import Home from './pages/Home';
+import { AuthProvider, useAuth } from './context/Auth';
 
-export default function App() {
+const Stack = createNativeStackNavigator();
+
+function Gate() {
+  const { token, loading } = useAuth();
+  if (loading) return null;
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {token ? (
+        <Stack.Screen name="Home" component={Home} />
+      ) : (
+        <>
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+        </>
+      )}
+    </Stack.Navigator>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+export default function App() {
+  return (
+    <AuthProvider>
+      <NavigationContainer>
+        <Layout>
+          <Gate />
+        </Layout>
+      </NavigationContainer>
+    </AuthProvider>
+  );
+}
