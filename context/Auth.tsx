@@ -1,11 +1,13 @@
 // /context/Auth.tsx
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, LoginRes } from '../services/api';
+import { auth } from '../services/auth';
+import { ensureOk, setAuthToken } from '../services/http';
+import type { LoginExtra } from '../services/auth';
 
 type Ctx = {
   token: string | null;
-  loading: boolean;
+  loading: boolean;                           // hidratando token inicial
   signIn: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -13,27 +15,36 @@ type Ctx = {
 const AuthCtx = createContext<Ctx>({} as Ctx);
 export const useAuth = () => useContext(AuthCtx);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Hidrata token al iniciar la app
   useEffect(() => {
     (async () => {
-      const t = await AsyncStorage.getItem('era_token');
-      setToken(t);
-      setLoading(false);
+      try {
+        const t = await AsyncStorage.getItem('era_token');
+        setToken(t);
+        setAuthToken(t); // Header Authorization automático
+      } finally {
+        setLoading(false);
+      }
     })();
   }, []);
 
+  // Login: chequea {error,msg}, obtiene token y lo persiste
   const signIn = async (email: string, pass: string) => {
-    const res: LoginRes = await auth.login(email, pass);
-    await AsyncStorage.setItem('era_token', res.token);
-    setToken(res.token);
+    const { token } = await ensureOk<LoginExtra>(auth.login(email, pass));
+    setToken(token);
+    setAuthToken(token);
+    await AsyncStorage.setItem('era_token', token);
   };
 
+  // Logout: limpia memoria y storage
   const signOut = async () => {
-    await AsyncStorage.removeItem('era_token');
     setToken(null);
+    setAuthToken(null);
+    await AsyncStorage.removeItem('era_token');
   };
 
   return (

@@ -1,7 +1,8 @@
 // /App.tsx
 import 'react-native-gesture-handler';
-import { NavigationContainer } from '@react-navigation/native';
+import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
 import Layout from './pages/Layout';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
@@ -9,6 +10,16 @@ import Home from './pages/Home';
 import { AuthProvider, useAuth } from './context/Auth';
 
 const Stack = createNativeStackNavigator();
+
+// Tema con fondo blanco
+const theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: '#fff',
+    card: '#fff',
+  },
+};
 
 function Gate() {
   const { token, loading } = useAuth();
@@ -30,7 +41,7 @@ function Gate() {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
+      <NavigationContainer theme={theme}>
         <Layout>
           <Gate />
         </Layout>
