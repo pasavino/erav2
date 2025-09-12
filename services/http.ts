@@ -48,26 +48,33 @@ export async function ensureOk<T>(p: Promise<ApiResponse<T>>): Promise<T> {
 // === Form-POST (application/x-www-form-urlencoded) ===
 export async function requestForm<T>(endpoint: string, data: Record<string, string>): Promise<ApiResponse<T>> {
   const url = `${BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
-  const body = Object.entries(data || {})
+  const token = AUTH_TOKEN || null;
+
+  const entries = Object.entries(data || {});
+  if (token) entries.push(['token', token]); // <-- token también en el BODY
+
+  const body = entries
     .map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v ?? '')}`)
     .join('&');
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-      ...(AUTH_TOKEN ? { 'Authorization': `Bearer ${AUTH_TOKEN}` } : {}),
-    },
-    body
-  });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+    headers['X-Auth-Token'] = token;
+  }
 
+  console.log(`[HTTP] POST ${endpoint} ${token ? 'token OK' : 'SIN TOKEN'}`);
+
+  const res = await fetch(url, { method: 'POST', headers, body });
   const text = await res.text();
   let json: any = {};
   try { json = text ? JSON.parse(text) : {}; } 
   catch { throw new Error(`Respuesta no-JSON (${res.status}): ${text.slice(0,120)}`); }
-
   if (!res.ok) throw new Error(json?.msg || `HTTP ${res.status}`);
   if (typeof json.error !== 'number') json.error = 0;
   if (typeof json.msg !== 'string') json.msg = '';
   return json as ApiResponse<T>;
 }
+

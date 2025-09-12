@@ -1,55 +1,76 @@
 // /context/Auth.tsx
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setAuthToken } from '../services/http';
 import { auth } from '../services/auth';
-import { ensureOk, setAuthToken } from '../services/http';
-import type { LoginExtra } from '../services/auth';
 
-type Ctx = {
+type User = { email?: string } | null;
+
+type AuthContextType = {
+  ready: boolean;
   token: string | null;
-  loading: boolean;                           // hidratando token inicial
-  signIn: (email: string, pass: string) => Promise<void>;
+  user: User;
+  signIn: (email: string, password: string) => Promise<{ ok: boolean; msg?: string }>;
   signOut: () => Promise<void>;
 };
 
-const AuthCtx = createContext<Ctx>({} as Ctx);
-export const useAuth = () => useContext(AuthCtx);
+const AuthContext = createContext<AuthContextType>({
+  ready: false,
+  token: null,
+  user: null,
+  signIn: async () => ({ ok: false, msg: 'Not ready' }),
+  signOut: async () => {},
+});
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const [ready, setReady] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User>(null);
 
-  // Hidrata token al iniciar la app
+  // Rehidratar token al iniciar
   useEffect(() => {
     (async () => {
       try {
         const t = await AsyncStorage.getItem('era_token');
-        setToken(t);
-        setAuthToken(t); // Header Authorization automático
+        if (t) {
+          setToken(t);
+          setAuthToken(t); // ← para que http.ts inyecte el token en POST
+        }
       } finally {
-        setLoading(false);
+        setReady(true);
       }
     })();
   }, []);
 
-  // Login: chequea {error,msg}, obtiene token y lo persiste
-  const signIn = async (email: string, pass: string) => {
-    const { token } = await ensureOk<LoginExtra>(auth.login(email, pass));
-    setToken(token);
-    setAuthToken(token);
-    await AsyncStorage.setItem('era_token', token);
+  // Login
+  const signIn = async (email: string, password: string) => {
+    try {
+      const res = await auth.login(email, password); // guarda token en storage y setAuthToken()
+      if (res.error) return { ok: false, msg: res.msg || 'Login failed' };
+
+      if (res.token) setToken(res.token);
+      if (res.user) setUser(res.user || null);
+
+      return { ok: true };
+    } catch (e: any) {
+      return { ok: false, msg: String(e?.message || e) };
+    }
   };
 
-  // Logout: limpia memoria y storage
+  // Logout
   const signOut = async () => {
+    await auth.logout();       // borra storage y limpia setAuthToken(null)
     setToken(null);
-    setAuthToken(null);
-    await AsyncStorage.removeItem('era_token');
+    setUser(null);
   };
 
-  return (
-    <AuthCtx.Provider value={{ token, loading, signIn, signOut }}>
-      {children}
-    </AuthCtx.Provider>
+  const value = useMemo(
+    () => ({ ready, token, user, signIn, signOut }),
+    [ready, token, user]
   );
-}
+
+  // Gate simple: el árbol puede usar `ready` y `token` para decidir navegación.
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => useContext(AuthContext);

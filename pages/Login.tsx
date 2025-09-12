@@ -117,11 +117,7 @@ export default function Login() {
 
       {/* Popup reusable para errores del backend */}
       <AppAlert
-        visible={!!alertMsg}
-        title="Login"
-        message={alertMsg || ''}
-        type="error"
-        confirmText="OK"
+        message={alertMsg || ''}              // ← sólo estos 2 props
         onClose={() => setAlertMsg(null)}
       />
     </>
