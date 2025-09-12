@@ -1,10 +1,9 @@
 // /pages/Home.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, StyleSheet, ActivityIndicator, FlatList, Image, useWindowDimensions
+  View, Text, StyleSheet, ActivityIndicator, Image, useWindowDimensions
 } from 'react-native';
 
-import Input from '../components/input';
 import Boton from '../components/boton';
 import AppAlert from '../components/appAlert';
 import Select from '../components/select';
@@ -15,11 +14,19 @@ import { ensureOk } from '../services/http';
 import { lists } from '../services/lists';
 import { rides } from '../services/rides';
 
-// Tipos (¡como type-only!)
-import type { Option, OptionsExtra } from '../services/lists';
-import type { Ride, SearchRidesExtra } from '../services/rides';
+// Tipos (type-only)
+import type { Option } from '../services/lists';
+import type { SearchRidesExtra } from '../services/rides';
 
-export default function Home() {
+// Helper: hoy en YYYY-MM-DD
+const todayYMD = () => {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+};
+
+export default function Home({ navigation }: any) {
   // Imagen (niger.png)
   const { width: winW, height: winH } = useWindowDimensions();
   const hero = require('../assets/niger.png');
@@ -35,55 +42,69 @@ export default function Home() {
   const [toOpt,   setToOpt]   = useState<Option[]>([]);
   const [from, setFrom] = useState<string>('');
   const [to,   setTo]   = useState<string>('');
-  const [date, setDate] = useState<string>(''); // YYYY-MM-DD o ''
+  const [date, setDate] = useState<string | null>(todayYMD());
 
   const [loadingCombos, setLoadingCombos] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<Ride[]>([]);
   const [alertMsg, setAlertMsg] = useState<string|null>(null);
+
+  
 
   // Cargar combos desde backend
   useEffect(() => {
     (async () => {
       try {
         setLoadingCombos(true);
-        const { lista: fromList } = await ensureOk<OptionsExtra>(lists.cities('from'));
-        const { lista: toList   } = await ensureOk<OptionsExtra>(lists.cities('to'));
+        const { lista: fromList } = await lists.cities('from');
+        const { lista: toList   } = await lists.cities('to');
+
         setFromOpt(fromList || []); setToOpt(toList || []);
         setFrom(fromList?.[0]?.id ?? ''); setTo(toList?.[0]?.id ?? '');
-      } catch (e:any) {
-        setAlertMsg(e?.message || 'Error loading options');
+      } catch (_e:any) {
+        // log silencioso
+        console.log(_e);
+        console.log('Load combos failed');
       } finally {
         setLoadingCombos(false);
       }
     })();
   }, []);
 
-  const errDate = useMemo(() => {
-    if (!date.trim()) return undefined;
-    return /^\d{4}-\d{2}-\d{2}$/.test(date) ? undefined : 'Use YYYY-MM-DD';
-  }, [date]);
+  // Validación simple de fecha
+const errDate = useMemo(() => {
+  if (!date || !date.trim()) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? undefined : 'Use YYYY-MM-DD';
+}, [date]);
+
+  // Normaliza el shape para la lista (time opcional)
+  const normalize = (lista: any[]) => (lista || []).map((r:any) => ({
+    id: String(r.id),
+    from: r.from,
+    to: r.to,
+    date: r.date,
+    time: r.time,     // puede no venir, el componente lo maneja
+    price: r.price,
+  }));
 
   const onSearch = async () => {
     if (errDate) { setAlertMsg(errDate); return; }
     try {
       setLoading(true);
-      const { lista } = await ensureOk<SearchRidesExtra>(rides.search({ from, to, date }));
-      setResults(lista || []);
-      if (!lista || lista.length === 0) setAlertMsg('No rides found');
-    } catch (e:any) {
-      setAlertMsg(e?.message || 'Search failed');
+      const { lista } = await ensureOk<SearchRidesExtra>(rides.search({ from, to, date: date || '' }));
+      const normalized = normalize(lista || []);
+      if (!normalized.length) {
+        setAlertMsg('No rides found');
+      } else {
+        // Navegar a pantalla de resultados (TripFindResult)
+        navigation.navigate('TripFindResult', { rides: normalized, from, to, date });
+      }
+    } catch (_e:any) {
+      console.log('Search failed');
+      setAlertMsg('Search failed');
     } finally {
       setLoading(false);
     }
   };
-
-  const renderItem = ({ item }: { item: Ride }) => (
-    <View style={styles.card}>
-      <Text style={styles.route}>{item.from} → {item.to}</Text>
-      <Text style={styles.meta}>{item.date} · ${item.price}</Text>
-    </View>
-  );
 
   return (
     <View style={styles.wrap}>
@@ -96,39 +117,43 @@ export default function Home() {
         <>
           <Select
             label="From"
-            options={fromOpt}
+            options={fromOpt.map(o=>({label:o.text, value:o.id}))}
             value={from}
             onChange={setFrom}
           />
           <Select
             label="To"
-            options={toOpt}
+            options={toOpt.map(o=>({label:o.text, value:o.id}))}
             value={to}
             onChange={setTo}
           />
           <DatePicker
-            label="Date (optional)"
-            value={date}
-            onChange={setDate}
-          />
+              label="Date (YYYY-MM-DD)"
+              value={date}
+              onChange={setDate}
+            />
 
-          {loading ? <ActivityIndicator/> : <Boton label="Search" onPress={onSearch} />}
-
-          <FlatList
-            data={results}
-            keyExtractor={(it)=> String(it.id)}
-            renderItem={renderItem}
-            contentContainerStyle={styles.list}
-          />
+          <View style={{ marginTop:12, marginBottom:4 }}>
+            <Boton
+              label={loading ? 'Searching…' : 'Search'}
+              onPress={() => { if (!loading) onSearch(); }}
+            />
+          </View>
         </>
       )}
 
-      {/* AppAlert sin title ni visible */}
+      {/* Overlay bloqueante durante la búsqueda */}
+      {loading && (
+        <View style={styles.overlay} pointerEvents="auto">
+          <ActivityIndicator size="large" />
+          <Text style={styles.overlayText}>Searching… please wait</Text>
+        </View>
+      )}
+
+      {/* AppAlert sólo para mensajes funcionales */}
       {alertMsg ? (
         <AppAlert
           message={alertMsg}
-          type="info"
-          confirmText="OK"
           onClose={()=>setAlertMsg(null)}
         />
       ) : null}
@@ -139,12 +164,9 @@ export default function Home() {
 const styles = StyleSheet.create({
   wrap:  { flex:1, padding:16, backgroundColor:'#fff' },
   title: { fontSize:20, fontWeight:'700', marginBottom:8, textAlign:'center' },
-  list:  { paddingVertical:12, gap:8 },
-  card:  {
-    backgroundColor:'#fff', borderRadius:12, padding:12,
-    borderWidth:1, borderColor:'#eee', shadowColor:'#000',
-    shadowOpacity:0.06, shadowRadius:6, shadowOffset:{width:0,height:3}, elevation:2
+  overlay: {
+    position:'absolute', left:0, top:0, right:0, bottom:0,
+    backgroundColor:'rgba(0,0,0,0.25)', alignItems:'center', justifyContent:'center'
   },
-  route: { fontSize:16, fontWeight:'700' },
-  meta:  { marginTop:4, color:'#555' }
+  overlayText: { marginTop:8, color:'#fff', fontSize:14 },
 });

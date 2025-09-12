@@ -25,9 +25,10 @@ export default function Select({ label, options, value, onChange }: Props) {
         <Text>{current ? current.label : 'Select...'}</Text>
       </Pressable>
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={() => setOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: '#fff', maxHeight: '60%', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 12 }}>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        {/* CENTRADO (antes estaba flex-end) */}
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ backgroundColor: '#fff', width: '90%', maxHeight: '70%', borderRadius: 16, padding: 12 }}>
             <Text style={{ fontWeight: '700', fontSize: 16, marginBottom: 8 }}>{label || 'Select'}</Text>
             <FlatList
               data={options}
