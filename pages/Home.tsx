@@ -9,6 +9,7 @@ import AppAlert from '../components/appAlert';
 import Select from '../components/select';
 import DatePicker from '../components/datePicker';
 
+
 // Servicios (imports directos, sin barrel)
 import { ensureOk } from '../services/http';
 import { lists } from '../services/lists';
