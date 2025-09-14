@@ -6,23 +6,22 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-
+    "platforms": ["android"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "ios": {
       "supportsTablet": true,
       "icon": "./assets/icon.png",
-      "newArchEnabled": true
+      "newArchEnabled": true,
+      "bundleIdentifier": "com.easyrideafrica.erav2"
     },
-
     "android": {
       "package": "com.easyrideafrica.erav2",
       "jsEngine": "hermes",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon-1024-transparent.png",
         "backgroundColor": "#ffffff"
@@ -30,11 +29,9 @@
       "edgeToEdgeEnabled": true,
       "newArchEnabled": true
     },
-
     "web": {
       "favicon": "./assets/favicon.png"
     },
-
     "extra": {
       "eas": {
         "projectId": "a2e91259-61fb-40e4-8b4b-89ca53e5d0fc"
