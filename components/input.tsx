@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 
 type Props = {
   label?: string;
@@ -7,7 +7,7 @@ type Props = {
   onChangeText: (t: string) => void;
   placeholder?: string;
   error?: string;
-  errorMode?: 'inline' | 'bubble'; // 👈 nuevo
+  errorMode?: 'inline' | 'bubble';
   keyboardType?: 'default'|'email-address'|'numeric'|'phone-pad';
   autoCapitalize?: 'none'|'sentences'|'words'|'characters';
   secureTextEntry?: boolean;
@@ -27,17 +27,18 @@ export default function Input({
   const showBubble = !!error && errorMode === 'bubble';
 
   return (
-    <View style={[styles.wrap, showBubble && { marginBottom: 26 }]} accessibilityState={{ invalid: !!error }}>
+    <View
+        style={[styles.wrap, showBubble && { marginBottom: 26 }]}
+        accessibilityLabel={label || 'input'}
+        accessibilityHint={error ? `Error: ${error}` : undefined}
+      >
+
       {label ? <Text style={styles.label}>{label}</Text> : null}
 
-      <View style={[
-        styles.box,
-        focused && styles.boxFocus,
-        !!error && styles.boxError
-      ]}>
+      <View style={[styles.box, focused && styles.boxFocus, !!error && styles.boxError]}>
         <TextInput
           style={styles.input}
-          value={value}
+          value={value ?? ''}                         // nunca undefined
           onChangeText={onChangeText}
           placeholder={placeholder}
           keyboardType={keyboardType}
@@ -45,12 +46,17 @@ export default function Input({
           secureTextEntry={hide}
           onFocus={() => setFocused(true)}
           onBlur={() => { setFocused(false); onBlur?.(); }}
-          placeholderTextColor="#9aa0a6"
+
+          // Fix Android visibilidad
+          underlineColorAndroid="transparent"
+          selectionColor="#111827"
+          placeholderTextColor="#6b7280"
+          allowFontScaling={false}
         />
         {secureTextEntry ? (
-          <Pressable onPress={() => setHide(v => !v)}>
-            <Text style={styles.toggle}>{hide ? 'Show' : 'Hide'}</Text>
-          </Pressable>
+          <Text onPress={() => setHide(v => !v)} style={styles.toggle}>
+            {hide ? 'Show' : 'Hide'}
+          </Text>
         ) : null}
       </View>
 
@@ -71,15 +77,24 @@ export default function Input({
 const styles = StyleSheet.create({
   wrap: { marginBottom: 10, position: 'relative' },
   label: { marginBottom: 6, fontSize: 14, color: '#374151' },
+
   box: {
     borderWidth: 1, borderColor: '#ddd', borderRadius: 10,
     paddingHorizontal: 12, paddingVertical: 10,
-    flexDirection: 'row', alignItems: 'center'
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#ffffff',                // fondo sólido evita tema oscuro
   },
   boxFocus: { borderColor: '#f4a040' },
   boxError: { borderColor: '#b00020' },
 
-  input: { flex: 1, fontSize: 16 },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 20,                            // evita clipping
+    color: '#111111',                          // texto oscuro fijo
+    includeFontPadding: true as any,           // Android: espacio interno
+    textAlignVertical: 'center' as any,        // Android single-line
+  },
   toggle: { marginLeft: 10, fontWeight: '600', color: '#f4a040' },
 
   // Inline
