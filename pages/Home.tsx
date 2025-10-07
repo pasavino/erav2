@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   title: { fontSize:20, fontWeight:'700', marginBottom:8, textAlign:'center' },
   overlay: {
     position:'absolute', left:0, top:0, right:0, bottom:0,
-    backgroundColor:'rgba(0,0,0,0.25)', alignItems:'center', justifyContent:'center'
+    backgroundColor:'rgba(255, 255, 255, 0.25)', alignItems:'center', justifyContent:'center'
   },
   overlayText: { marginTop:8, color:'#fff', fontSize:14 },
 });

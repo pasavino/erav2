@@ -1,14 +1,14 @@
 // /pages/Login.tsx
 import { useState, useMemo } from 'react';
-import {
-  View, Text, StyleSheet, ActivityIndicator, Image, useWindowDimensions
-} from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image, useWindowDimensions} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Boton from '../components/boton';
 import Input from '../components/input';
 import AppAlert from '../components/appAlert';
 import { useAuth } from '../context/Auth';
+import { auth } from '../services/auth';
+
 
 export default function Login() {
   const nav = useNavigation();
@@ -40,17 +40,27 @@ export default function Login() {
   }, [showValidationPass, pass]);
 
   const onLogin = async () => {
-    setSubmitted(true);
-    if (errEmail || errPass) return;
+    if (loading) return; // evita doble tap
+
+    // Validación sin estados (sincrónica)
+    const hasEmail = email.trim().length > 0;
+    const validEmail = /^\S+@\S+\.\S+$/.test(email);
+    const hasPass = pass.trim().length > 0;
+
+    setSubmitted(true); // solo para mostrar errores en UI
+
+    if (!hasEmail || !validEmail || !hasPass) return; // ❗ no hagas la petición
+
     try {
       setLoading(true);
-      await signIn(email, pass);           // si error=0 → Gate manda a Home
-    } catch (e:any) {
-      setAlertMsg(e?.message || 'Login failed'); // ← msg del backend en popup
+      await signIn(email, pass); // tu flujo actual
+    } catch (e: any) {
+      setAlertMsg(e?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
   };
+
 
   // Imagen (sin recortes)
   const { width: winWidth, height: winHeight } = useWindowDimensions();

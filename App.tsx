@@ -20,8 +20,9 @@ const theme = {
   },
 };
 
-function Gate() {
-  const { token, loading } = useAuth();
+function Gate() {  
+  const { token, loading = false } = useAuth() as any;
+
   if (loading) return null;
 
   return (
