@@ -120,7 +120,7 @@ export default function Login() {
             <View style={{ height: 8 }} />
             <Boton label="Forgot password?" onPress={() => nav.navigate('ForgotPassword' as never)} />
             <View style={{ height: 8 }} />
-            <Boton label="Create account" onPress={() => {/* TODO: sign up */}} />
+            <Boton label="Create account" onPress={() => nav.navigate('Register' as never)} />
           </>
         )}
       </KeyboardAwareScrollView>

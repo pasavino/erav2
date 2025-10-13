@@ -25,4 +25,24 @@ export const auth = {
   // (Opcional) Recupero de contraseña
   recover: (email: string) =>
     requestForm<{}>('/ax_recover.php', { email }),
+
+  // Validar al abrir la app: compara token guardado con el de la BD.
+  // Devuelve true si es válido; en caso contrario limpia y devuelve false.
+  validateStoredToken: async (): Promise<boolean> => {
+    const t = await AsyncStorage.getItem('era_token');
+    if (!t) {
+      setAuthToken(null);
+      return false;
+    }
+    setAuthToken(t);
+    // Usa el endpoint de validación que ya tengas en tu backend.
+    // Aquí asumo '/ax_validate.php' siguiendo el prefijo actual.
+    const out = await requestForm<{}>('/ax_validate.php', {});
+    if (out.error) {
+      await AsyncStorage.removeItem('era_token');
+      setAuthToken(null);
+      return false;
+    }
+    return true;
+  },
 };

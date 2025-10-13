@@ -27,14 +27,23 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User>(null);
 
-  // Rehidratar token al iniciar
+  // Validar token guardado contra la BD al iniciar
   useEffect(() => {
     (async () => {
       try {
-        const t = await AsyncStorage.getItem('era_token');
-        if (t) {
-          setToken(t);
-          setAuthToken(t); // ← para que http.ts inyecte el token en POST
+        const ok = await auth.validateStoredToken();
+        if (ok) {
+          const t = await AsyncStorage.getItem('era_token');
+          if (t) {
+            setToken(t);
+            setAuthToken(t); // http.ts inyectará el token en los POST
+          } else {
+            setToken(null);
+            setAuthToken(null);
+          }
+        } else {
+          setToken(null);
+          setAuthToken(null);
         }
       } finally {
         setReady(true);
@@ -45,7 +54,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   // Login
   const signIn = async (email: string, password: string) => {
     try {
-      const res = await auth.login(email, password); // guarda token en storage y setAuthToken()
+      const res = await auth.login(email, password); // guarda token y setAuthToken()
       if (res.error) return { ok: false, msg: res.msg || 'Login failed' };
 
       if (res.token) setToken(res.token);
@@ -59,7 +68,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
   // Logout
   const signOut = async () => {
-    await auth.logout();       // borra storage y limpia setAuthToken(null)
+    await auth.logout();
     setToken(null);
     setUser(null);
   };

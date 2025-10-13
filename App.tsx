@@ -3,9 +3,10 @@ import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Layout from './pages/Layout';
+import MainTabs from './pages/MainTabs';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
-import Home from './pages/Home';
+import Register from './pages/Register';
 import TripFindResult from './pages/TripFindResult'; // ya lo tenías importado
 import { AuthProvider, useAuth } from './context/Auth';
 
@@ -29,14 +30,15 @@ function Gate() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {token ? (
         <>
-          <Stack.Screen name="Home" component={Home} />
-          {/* ✅ ÚNICA LÍNEA NECESARIA para que el NAVIGATE sea manejado */}
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          {/* ✅ Deja TripFindResult en el stack padre para navegar desde las tabs */}
           <Stack.Screen name="TripFindResult" component={TripFindResult} />
         </>
       ) : (
         <>
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+          <Stack.Screen name="Register" component={Register} />
         </>
       )}
     </Stack.Navigator>

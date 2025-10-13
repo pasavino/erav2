@@ -49,7 +49,6 @@ export default function Home({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string|null>(null);
 
-  
 
   // Cargar combos desde backend
   useEffect(() => {
