@@ -37,12 +37,12 @@ export default function Register() {
 
   const isEmail = (s:string)=>/^\S+@\S+\.\S+$/.test(s);
 
-  // flags de visualización de errores (sin colisión con show/hide de password)
-  const showFirst  = submitted || touched.first;
-  const showLast   = submitted || touched.last;
-  const showEmail  = submitted || touched.email;
-  const showPhone  = submitted || touched.phone;
-  const showPassVal= submitted || touched.pass;
+  // flags de visualización de errores
+  const showFirst   = submitted || touched.first;
+  const showLast    = submitted || touched.last;
+  const showEmail   = submitted || touched.email;
+  const showPhone   = submitted || touched.phone;
+  const showPassVal = submitted || touched.pass;
 
   const errFirst = useMemo(() => {
     if (!showFirst) return undefined;
@@ -86,7 +86,7 @@ export default function Register() {
       if (eo.phone)      e.phone      = String(eo.phone);
       if (eo.password)   e.password   = String(eo.password);
     }
-    const general = data?.message || data?.error || data?.detail;
+    const general = data?.msg || data?.message || data?.error || data?.detail;
     if (general) e.general = String(general);
     return e;
   };
@@ -105,18 +105,27 @@ export default function Register() {
 
     try {
       setLoading(true);
-      await (auth as any).register?.({
+      const out: any = await (auth as any).register?.({
         first_name: firstName.trim(),
         last_name:  lastName.trim(),
         email:      email.trim().toLowerCase(),
-        phone:      phone.trim() || null,
+        phone:      phone.trim() || '',
         password,
       });
+
+      // Si el contexto devuelve ApiResponse ({ error, msg }), no navegamos si hay error.
+      if (out && typeof out === 'object' && 'error' in out && out.error) {
+        setAlertMsg(out.msg || 'Registration failed');
+        return;
+      }
+
+      // Éxito real → navegar a Login
       nav.navigate('Login');
     } catch (err: any) {
+      // Errores de red o throw desde el contexto
       const data = err?.response?.data ?? err?.data ?? err;
       const be = mapBackendErrors(data);
-      setAlertMsg(be.general || 'Registration failed');
+      setAlertMsg(be.general || err?.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -141,6 +150,7 @@ export default function Register() {
           onBlur={() => setTouched(v => ({ ...v, first: true }))}
           error={errFirst}
           errorMode="bubble"
+          maxlenght={50}
         />
 
         <Input
@@ -151,6 +161,7 @@ export default function Register() {
           onBlur={() => setTouched(v => ({ ...v, last: true }))}
           error={errLast}
           errorMode="bubble"
+          maxlenght={50}
         />
 
         <Input
@@ -163,19 +174,22 @@ export default function Register() {
           onBlur={() => setTouched(v => ({ ...v, email: true }))}
           error={errEmail}
           errorMode="bubble"
+          maxlenght={50}
         />
 
         <Input
           label="Phone"
           value={phone}
-          onChangeText={setPhone}
-          placeholder="+23"
+          onChangeText={(t: string) => setPhone(t.replace(/[^0-9]/g, ''))}  // ← solo dígitos
+          placeholder="1122334455"
+          keyboardType="phone-pad"                                          // ← teclado numérico
           onBlur={() => setTouched(v => ({ ...v, phone: true }))}
           error={errPhone}
           errorMode="bubble"
+          maxlenght={20}
         />
 
-        {/* Password: sin ícono; el propio <Input> muestra “Show/Hide” como en Login */}
+        {/* Password: sin ícono; tu <Input> maneja Show/Hide como en Login */}
         <Input
           label="Password"
           value={password}
@@ -185,6 +199,7 @@ export default function Register() {
           onBlur={() => setTouched(v => ({ ...v, pass: true }))}
           error={errPass}
           errorMode="bubble"
+          maxlenght={20}
         />
 
         {loading ? (

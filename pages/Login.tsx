@@ -99,6 +99,7 @@ export default function Login() {
           onBlur={()=> setTouched(v=>({ ...v, email:true }))}
           error={errEmail}
           errorMode="bubble"
+          maxlenght={50}
         />
 
         <Input
@@ -110,6 +111,7 @@ export default function Login() {
           onBlur={()=> setTouched(v=>({ ...v, pass:true }))}
           error={errPass}
           errorMode="bubble"
+          maxlenght={20}
         />
 
         {loading ? (

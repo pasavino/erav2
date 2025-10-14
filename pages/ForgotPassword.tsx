@@ -93,6 +93,7 @@ export default function ForgotPassword() {
           onBlur={() => setTouchedEmail(true)}
           error={errMsg}
           errorMode="bubble"
+          maxlenght={50}
         />
 
         {serverErr ? <Text style={styles.serverErr}>{serverErr}</Text> : null}
