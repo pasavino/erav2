@@ -12,14 +12,18 @@ type AuthContextType = {
   user: User;
   signIn: (email: string, password: string) => Promise<{ ok: boolean; msg?: string }>;
   signOut: () => Promise<void>;
+  // ⬇️ agregado: exponemos la función register del servicio
+  register: (payload: any) => Promise<any>;
 };
 
+// Nota: usamos la función del servicio en el valor por defecto para evitar undefined
 const AuthContext = createContext<AuthContextType>({
   ready: false,
   token: null,
   user: null,
   signIn: async () => ({ ok: false, msg: 'Not ready' }),
   signOut: async () => {},
+  register: auth.register,
 });
 
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
@@ -55,10 +59,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   const signIn = async (email: string, password: string) => {
     try {
       const res = await auth.login(email, password); // guarda token y setAuthToken()
-      if (res.error) return { ok: false, msg: res.msg || 'Login failed' };
+      if ((res as any).error) return { ok: false, msg: (res as any).msg || 'Login failed' };
 
-      if (res.token) setToken(res.token);
-      if (res.user) setUser(res.user || null);
+      if ((res as any).token) setToken((res as any).token as string);
+      if ((res as any).user) setUser(((res as any).user as any) || null);
 
       return { ok: true };
     } catch (e: any) {
@@ -73,12 +77,12 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     setUser(null);
   };
 
+  // 🔑 valor del contexto: añadimos register del servicio (sin reimplementar nada)
   const value = useMemo(
-    () => ({ ready, token, user, signIn, signOut }),
-    [ready, token, user]
+    () => ({ ready, token, user, signIn, signOut, register: auth.register }),
+    [ready, token, user] // dejamos tus dependencias como estaban
   );
 
-  // Gate simple: el árbol puede usar `ready` y `token` para decidir navegación.
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 

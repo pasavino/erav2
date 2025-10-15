@@ -35,7 +35,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
-  const isEmail = (s:string)=>/^\S+@\S+\.\S+$/.test(s);
+  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s);
 
   // flags de visualización de errores
   const showFirst   = submitted || touched.first;
@@ -94,18 +94,27 @@ export default function Register() {
   const onRegister = async () => {
     if (loading) return;
 
-    const ok =
+    const ok = !!(
       firstName.trim() &&
       lastName.trim() &&
-      isEmail(email) &&
-      password.trim().length >= 8;
+      /^\S+@\S+\.\S+$/.test(email) &&
+      password.trim().length >= 8
+    );
 
     setSubmitted(true);
     if (!ok) return;
 
     try {
       setLoading(true);
-      const out: any = await (auth as any).register?.({
+
+      // Fix TS: obtener la función con bracket notation
+      const registerFn = (auth as any)?.['register'];
+      if (typeof registerFn !== 'function') {
+        setAlertMsg('Config error: register no disponible');
+        return;
+      }
+
+      const out: any = await registerFn({
         first_name: firstName.trim(),
         last_name:  lastName.trim(),
         email:      email.trim().toLowerCase(),
@@ -113,23 +122,24 @@ export default function Register() {
         password,
       });
 
-      // Si el contexto devuelve ApiResponse ({ error, msg }), no navegamos si hay error.
-      if (out && typeof out === 'object' && 'error' in out && out.error) {
-        setAlertMsg(out.msg || 'Registration failed');
+      if (!out || typeof out !== 'object' || !('error' in out)) {
+        setAlertMsg('Sin respuesta del servidor');
         return;
       }
 
-      // Éxito real → navegar a Login
+      const errNum = Number(out.error);
+      if (!Number.isFinite(errNum) || errNum !== 0) {
+        setAlertMsg(out.message || out.msg || 'Registration failed');
+        return;
+      }
+
       nav.navigate('Login');
     } catch (err: any) {
-      // Errores de red o throw desde el contexto
-      const data = err?.response?.data ?? err?.data ?? err;
-      const be = mapBackendErrors(data);
-      setAlertMsg(be.general || err?.message || 'Network error. Please try again.');
+      setAlertMsg(err?.message || 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+};
 
   return (
     <>
@@ -180,16 +190,15 @@ export default function Register() {
         <Input
           label="Phone"
           value={phone}
-          onChangeText={(t: string) => setPhone(t.replace(/[^0-9]/g, ''))}  // ← solo dígitos
+          onChangeText={(t: string) => setPhone(t.replace(/[^0-9]/g, ''))}
           placeholder="1122334455"
-          keyboardType="phone-pad"                                          // ← teclado numérico
+          keyboardType="phone-pad"
           onBlur={() => setTouched(v => ({ ...v, phone: true }))}
           error={errPhone}
           errorMode="bubble"
           maxlenght={20}
         />
 
-        {/* Password: sin ícono; tu <Input> maneja Show/Hide como en Login */}
         <Input
           label="Password"
           value={password}
