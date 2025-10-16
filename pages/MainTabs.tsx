@@ -33,7 +33,7 @@ export default function MainTabs() {
         headerShown: false,
         tabBarLabelStyle: { fontSize: 12 },
         tabBarHideOnKeyboard: false,
-        tabBarStyle: { height: 60 },
+        tabBarStyle: { height:100 },
         tabBarActiveTintColor: '#111',
         tabBarInactiveTintColor: '#9aa0a6',
         tabBarIcon: ({ focused, size, color }) => {
@@ -41,7 +41,7 @@ export default function MainTabs() {
 
           if (route.name === 'Home')        name = focused ? 'home'        : 'home-outline';         // casita
           if (route.name === 'Publish ride')name = focused ? 'add-circle'  : 'add-circle-outline';
-          if (route.name === 'Car')         name = focused ? 'car'         : 'car-outline';
+          if (route.name === 'Car')      name = focused ? 'car'         : 'car-outline';
           if (route.name === 'Profile')     name = focused ? 'person'      : 'person-outline';
 
           return <Ionicons name={name} size={size} color={color} />;
@@ -51,7 +51,7 @@ export default function MainTabs() {
       {/* Orden: 1-Home, 2-Publish ride, 3-Car, 4-Profile */}
       <Tab.Screen name="Home" component={HomeStack} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="Publish ride" component={Publish} options={{ tabBarLabel: 'Publish ride' }} />
-      <Tab.Screen name="Car" component={Car} options={{ tabBarLabel: 'Car' }} />
+      <Tab.Screen name="Car" component={Car} options={{ tabBarLabel: 'My Car' }} />
       <Tab.Screen name="Profile" component={Profile} options={{ tabBarLabel: 'Profile' }} />
     </Tab.Navigator>
   );

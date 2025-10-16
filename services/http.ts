@@ -77,4 +77,3 @@ export async function requestForm<T>(endpoint: string, data: Record<string, stri
   if (typeof json.msg !== 'string') json.msg = '';
   return json as ApiResponse<T>;
 }
-
