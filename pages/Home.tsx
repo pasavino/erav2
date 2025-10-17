@@ -62,8 +62,8 @@ export default function Home({ navigation }: any) {
         setFrom(fromList?.[0]?.id ?? ''); setTo(toList?.[0]?.id ?? '');
       } catch (_e:any) {
         // log silencioso
-        console.log(_e);
-        console.log('Load combos failed');
+        // console.log(_e);
+        // console.log('Load combos failed');
       } finally {
         setLoadingCombos(false);
       }
@@ -98,8 +98,7 @@ const errDate = useMemo(() => {
         // Navegar a pantalla de resultados (TripFindResult)
         navigation.navigate('TripFindResult', { rides: normalized, from, to, date });
       }
-    } catch (_e:any) {
-      console.log('Search failed');
+    } catch (_e:any) {      
       setAlertMsg('Search failed');
     } finally {
       setLoading(false);

@@ -10,9 +10,11 @@ import Car from './Car';
 import Publish from './Publish';
 import Home from './Home'; // Search page
 import TripFindResult from './TripFindResult';
+import AddVehicle from './AddVehicle';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
+const CarStackNav = createNativeStackNavigator();
 
 function HomeStack() {
   return (
@@ -22,6 +24,15 @@ function HomeStack() {
       {/* Mantener resultados dentro del stack de Home para conservar la tab bar */}
       <HomeStackNav.Screen name="TripFindResult" component={TripFindResult} />
     </HomeStackNav.Navigator>
+  );
+}
+
+function CarStack() {
+  return (
+    <CarStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <CarStackNav.Screen name="Car" component={Car} />
+      <CarStackNav.Screen name="AddVehicle" component={AddVehicle} />
+    </CarStackNav.Navigator>
   );
 }
 
@@ -38,12 +49,10 @@ export default function MainTabs() {
         tabBarInactiveTintColor: '#9aa0a6',
         tabBarIcon: ({ focused, size, color }) => {
           let name: keyof typeof Ionicons.glyphMap = 'ellipse';
-
-          if (route.name === 'Home')        name = focused ? 'home'        : 'home-outline';         // casita
-          if (route.name === 'Publish ride')name = focused ? 'add-circle'  : 'add-circle-outline';
-          if (route.name === 'Car')      name = focused ? 'car'         : 'car-outline';
-          if (route.name === 'Profile')     name = focused ? 'person'      : 'person-outline';
-
+          if (route.name === 'Home')         name = focused ? 'home'       : 'home-outline';
+          if (route.name === 'Publish ride') name = focused ? 'add-circle' : 'add-circle-outline';
+          if (route.name === 'Car')          name = focused ? 'car'        : 'car-outline';
+          if (route.name === 'Profile')      name = focused ? 'person'     : 'person-outline';
           return <Ionicons name={name} size={size} color={color} />;
         },
       })}
@@ -51,7 +60,7 @@ export default function MainTabs() {
       {/* Orden: 1-Home, 2-Publish ride, 3-Car, 4-Profile */}
       <Tab.Screen name="Home" component={HomeStack} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="Publish ride" component={Publish} options={{ tabBarLabel: 'Publish ride' }} />
-      <Tab.Screen name="Car" component={Car} options={{ tabBarLabel: 'My Car' }} />
+      <Tab.Screen name="Car" component={CarStack} options={{ tabBarLabel: 'My Car' }} />
       <Tab.Screen name="Profile" component={Profile} options={{ tabBarLabel: 'Profile' }} />
     </Tab.Navigator>
   );
