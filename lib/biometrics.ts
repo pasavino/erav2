@@ -1,40 +1,39 @@
-// lib/biometrics.ts
+// services/biometric.ts
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 
-const TOKEN_KEY = 'era.refresh_token';
+export const BIOMETRIC_KEY = 'BIOMETRIC_ENABLED';
+export const CREDS_KEY = 'BIOMETRIC_CREDS';
 
-export async function canUseBiometrics(): Promise<boolean> {
-  try {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    return hasHardware && enrolled;
-  } catch {
-    return false;
-  }
+type Creds = { email: string; password: string };
+
+export async function isBiometricAvailable(): Promise<boolean> {
+  const has = await LocalAuthentication.hasHardwareAsync();
+  const enrolled = await LocalAuthentication.isEnrolledAsync();
+  return has && enrolled;
 }
 
-export async function enableBiometricToken(refreshToken: string) {
-  // NO uses authenticationPrompt aquí (solo aplica en getItemAsync)
-  await SecureStore.setItemAsync(TOKEN_KEY, refreshToken, {
-    requireAuthentication: true, // ok
-    keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY, // iOS
+export async function biometricAuthenticate(prompt?: string): Promise<boolean> {
+  const res = await LocalAuthentication.authenticateAsync({
+    promptMessage: prompt ?? 'Usa tu huella para continuar',
+    cancelLabel: 'Cancelar',
+    disableDeviceFallback: true,
   });
+  return !!res.success;
 }
 
-export async function readBiometricToken(): Promise<string | null> {
-  try {
-    // Aquí sí: authenticationPrompt debe ser STRING
-    const t = await SecureStore.getItemAsync(TOKEN_KEY, {
-      requireAuthentication: true,
-      authenticationPrompt: 'Biometric authentication', // iOS
-    });
-    return t ?? null;
-  } catch {
-    return null;
-  }
+export async function getBiometricOptIn(): Promise<boolean> {
+  return (await SecureStore.getItemAsync(BIOMETRIC_KEY)) === '1';
+}
+export async function setBiometricOptIn(on: boolean) {
+  await SecureStore.setItemAsync(BIOMETRIC_KEY, on ? '1' : '0');
+  if (!on) await SecureStore.deleteItemAsync(CREDS_KEY);
 }
 
-export async function disableBiometricToken() {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
+export async function saveCreds(email: string, password: string) {
+  await SecureStore.setItemAsync(CREDS_KEY, JSON.stringify({ email, password }));
+}
+export async function getCreds(): Promise<Creds | null> {
+  const s = await SecureStore.getItemAsync(CREDS_KEY);
+  return s ? JSON.parse(s) as Creds : null;
 }
