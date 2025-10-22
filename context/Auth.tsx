@@ -1,7 +1,7 @@
 // context/Auth.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setAuthToken } from '../services/http';
+import { setAuthToken, requestForm } from '../services/http';
 import { auth as authApi, type LoginExtra } from '../services/auth';
 import type { ApiResponse } from '../services/http';
 
@@ -48,9 +48,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await AsyncStorage.removeItem('AUTH_TOKEN');
-    setToken(null);
-    setAuthToken(null);
+    try {
+      const t = token || (await AsyncStorage.getItem('AUTH_TOKEN'));
+      if (t) {
+        // Asegura header Authorization antes de llamar al backend
+        setAuthToken(t);
+        // Notificamos al backend para revocar/eliminar el token en MySQL
+        await requestForm('/ax_logout.php', {}); // ignoramos respuesta; la sesión local se cierra igual
+      }
+    } catch {
+      // No hacemos nada: pase lo que pase, cerramos localmente
+    } finally {
+      // Limpieza local garantizada
+      await AsyncStorage.removeItem('AUTH_TOKEN');
+      setToken(null);
+      setAuthToken(null);
+    }
   };
 
   const signIn = async (email: string, password: string): Promise<ApiResponse<LoginExtra>> => {

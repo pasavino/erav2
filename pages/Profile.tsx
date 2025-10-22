@@ -1,6 +1,486 @@
-// pages/Profile.tsx
-import React from 'react';
-import { SafeAreaView, Text } from 'react-native';
+// /pages/Profile.tsx
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import * as ImagePicker from 'expo-image-picker';
+import Input from '../components/input';
+import Boton from '../components/boton';
+import AppAlert from '../components/appAlert';
+import { useAuth } from '../context/Auth';
+import { requestForm, setAuthToken } from '../services/http';
+import AvatarSvg from '../assets/avatar.svg';
+
+type ProfileData = {
+  first_name: string;
+  last_name: string;
+  phone?: string | null;
+  avatar_url?: string | null;
+  email: string;
+  biometric_enabled?: boolean;
+};
+
+const Tab = createMaterialTopTabNavigator();
+
 export default function Profile() {
-  return <SafeAreaView><Text>Profile</Text></SafeAreaView>;
+  return (
+    <View style={{ flex: 1 }}>
+      <Tab.Navigator
+        screenOptions={{
+          tabBarIndicatorStyle: { height: 3 },
+          tabBarLabelStyle: { fontWeight: '600' },
+          tabBarStyle: { backgroundColor: '#fff' },
+        }}
+      >
+        <Tab.Screen name="Personal Info" component={PersonalInfoTab} />
+        <Tab.Screen name="Account" component={AccountTab} />
+      </Tab.Navigator>
+    </View>
+  );
 }
+
+/* -------- data hook -------- */
+function useProfileData() {
+  const { token } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<ProfileData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // helper: cache-busting para avatar
+  const bust = (u?: string | null) => (u ? `${u}${u.includes('?') ? '&' : '?'}v=${Date.now()}` : null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setAuthToken(token || '');
+        const out = await requestForm<{ data: ProfileData; msg?: string; error?: number }>('/ax_get_profile.php', {});
+        if (!out.error && out.data) {
+          const d: ProfileData = {
+            ...out.data,
+            avatar_url: bust(out.data.avatar_url), // ← importante            
+          };
+          console.log(out.data.avatar_url);
+          mounted && setData(d);
+        } else mounted && setError(out?.msg || 'Could not load profile');
+      } catch (e: any) {
+        mounted && setError(e?.message || 'Network error');
+      } finally {
+        mounted && setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [token]);
+
+  return { loading, data, setData, error, setError };
+}
+
+/* -------- UI blocks -------- */
+function Loading() {
+  return (
+    <View style={styles.loading}>
+      <ActivityIndicator />
+    </View>
+  );
+}
+
+function HeaderAvatar({
+  avatar, name, onPick, onSelfie,
+}: { avatar?: string | null; name: string; onPick: () => void; onSelfie: () => void; }) {
+  return (
+    <View style={styles.header}>
+      <View>
+        <TouchableOpacity onPress={onPick} accessibilityLabel="Change profile photo">
+          {avatar ? (
+            <Image source={{ uri: avatar }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatar}>
+              <AvatarSvg width={84} height={84} />
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <Text style={styles.changePhoto}>
+          <Text onPress={onPick}>Change photo</Text>
+          <Text> / </Text>
+          <Text onPress={onSelfie}>Take selfie</Text>
+        </Text>
+      </View>
+
+      <View style={{ flex: 1, marginLeft: 20 }}>
+        <Text style={styles.name} numberOfLines={1}>{name}</Text>
+      </View>
+    </View>
+  );
+}
+
+/* -------- Personal Info -------- */
+type TouchedPI = { first: boolean; last: boolean; email: boolean; phone: boolean };
+
+function PersonalInfoTab() {
+  const { loading, data, setData, error, setError } = useProfileData();
+  const [saving, setSaving] = useState(false);
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName,  setLastName]  = useState('');
+  const [email,     setEmail]     = useState('');
+  const [phone,     setPhone]     = useState('');
+
+  // Mensajes
+  const [inlineInfo, setInlineInfo] = useState<string | null>(null); // éxitos/info
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);     // HTTP/servidor/red
+
+  // Bubbles
+  const [touched, setTouched] = useState<TouchedPI>({ first: false, last: false, email: false, phone: false });
+  const markOnly = (k: keyof TouchedPI) =>
+    setTouched({ first: false, last: false, email: false, phone: false, [k]: true });
+
+  useEffect(() => {
+    if (data) {
+      setFirstName(data.first_name || '');
+      setLastName(data.last_name || '');
+      setEmail(data.email || '');
+      setPhone(data.phone || '');
+    }
+  }, [data]);
+
+  // onChange con límites
+  const onChangeFirst = (t: string) => setFirstName(t.slice(0, 50));
+  const onChangeLast  = (t: string) => setLastName(t.slice(0, 50));
+  const onChangeEmail = (t: string) => setEmail(t.slice(0, 50));
+  const onChangePhone = (t: string) => setPhone(t.replace(/\D+/g, '').slice(0, 50));
+
+  const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s);
+
+  // Errores por campo (bubbles) — Nombre → Apellido → Email → Teléfono
+  const errFirst = useMemo(() => {
+    if (!touched.first) return undefined;
+    const v = firstName.trim();
+    if (!v) return 'First name required';
+    if (v.length > 50) return 'Max 50 characters';
+    return undefined;
+  }, [touched.first, firstName]);
+
+  const errLast = useMemo(() => {
+    if (!touched.last) return undefined;
+    const v = lastName.trim();
+    if (!v) return 'Last name required';
+    if (v.length > 50) return 'Max 50 characters';
+    return undefined;
+  }, [touched.last, lastName]);
+
+  const errEmail = useMemo(() => {
+    if (!touched.email) return undefined;
+    const em = email.trim();
+    if (!em) return 'Email is required';
+    if (em.length > 50) return 'Max 50 characters';
+    if (!isEmail(em)) return 'Enter a valid email';
+    return undefined;
+  }, [touched.email, email]);
+
+  const errPhone = useMemo(() => {
+    if (!touched.phone) return undefined;
+    const p = phone.trim();
+    if (p && !/^\d+$/.test(p)) return 'Digits only';
+    if (p && p.length < 6) return 'At least 6 digits';
+    if (p.length > 50) return 'Max 50 digits';
+    return undefined;
+  }, [touched.phone, phone]);
+
+  const onPickAvatar = async () => {
+    if (saving) return;
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        setAlertMsg('We need access to your photos to change the avatar.');
+        return;
+      }
+      const res = await ImagePicker.launchImageLibraryAsync({
+        quality: 0.8, allowsEditing: true, aspect: [1,1], base64: true
+      });
+      if (res.canceled || !res.assets?.length) return;
+      await uploadAndSet(res.assets[0].base64 as string);
+    } catch (e: any) {
+      setAlertMsg(e?.message || 'Image picker error');
+    }
+  };
+
+  const onTakeSelfie = async () => {
+    if (saving) return;
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        setAlertMsg('We need camera access to take a selfie.');
+        return;
+      }
+      const res = await ImagePicker.launchCameraAsync({
+        cameraType: ImagePicker.CameraType.front,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+        base64: true,
+      });
+      if (res.canceled || !res.assets?.length) return;
+      await uploadAndSet(res.assets[0].base64 as string);
+    } catch (e: any) {
+      setAlertMsg(e?.message || 'Camera error');
+    }
+  };
+
+  const uploadAndSet = async (base64: string) => {
+    try {
+      setSaving(true);
+      const up = await requestForm<{ url?: string; error?: number; msg?: string }>(
+        '/ax_upload_avatar.php',
+        { avatar_base64: base64 ?? '' }
+      );
+      if (!up.error && up.url) {
+        const bust = `${up.url}?v=${Date.now()}`;
+        setData && setData({ ...(data as any), avatar_url: bust });
+        setInlineInfo('Photo updated');
+      } else setAlertMsg(up.msg || 'Could not update photo'); // HTTP -> AppAlert
+    } catch (e: any) {
+      setAlertMsg(e?.message || 'Upload error'); // HTTP -> AppAlert
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onSave = async () => {
+    if (saving || loading) return;
+    setInlineInfo(null);
+
+    // Validación secuencial: Nombre -> Apellido -> Email -> Teléfono
+    const fn = firstName.trim();
+    const ln = lastName.trim();
+    const em = email.trim();
+    const ph = phone.trim();
+
+    if (!fn || fn.length > 50) { markOnly('first'); return; }
+    if (!ln || ln.length > 50) { markOnly('last');  return; }
+    if (!em || em.length > 50 || !isEmail(em)) { markOnly('email'); return; }
+    if (ph && (!/^\d+$/.test(ph) || ph.length < 6 || ph.length > 50)) { markOnly('phone'); return; }
+
+    // sin cambios
+    const dirty = !!data && (
+      fn !== (data.first_name || '') ||
+      ln !== (data.last_name  || '') ||
+      em !== (data.email      || '') ||
+      ph !== (data.phone      || '')
+    );
+    if (!dirty) { setInlineInfo('No changes to save.'); return; }
+
+    try {
+      setSaving(true);
+      const out = await requestForm<{ error?: number; msg?: string }>(
+        '/ax_update_profile.php',
+        { first_name: fn, last_name: ln, email: em, phone: ph }
+      );
+      if (!out.error) {
+        setData && setData({ ...(data as any), first_name: fn, last_name: ln, email: em, phone: ph });
+        setInlineInfo('Profile updated');
+      } else setAlertMsg(out.msg || 'Could not save changes'); // HTTP -> AppAlert
+    } catch (e: any) {
+      setAlertMsg(e?.message || 'Network error'); // HTTP -> AppAlert
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <Loading />;
+
+  return (
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      {/* HTTP/servidor/red */}
+      {!!error && <AppAlert message={error} onClose={() => setError(null)} />}
+      {!!alertMsg && <AppAlert message={alertMsg} onClose={() => setAlertMsg(null)} />}
+      {/* info inline */}
+      {!!inlineInfo && <Text style={styles.inlineInfo}>{inlineInfo}</Text>}
+
+      <HeaderAvatar
+        avatar={data?.avatar_url || null}
+        name={`${data?.first_name ?? ''} ${data?.last_name ?? ''}`.trim() || (data?.email ?? '')}
+        onPick={onPickAvatar}
+        onSelfie={onTakeSelfie}
+      />
+
+      <Input
+        label="First name"
+        value={firstName}
+        onChangeText={onChangeFirst}
+        placeholder="Your first name"
+        autoCapitalize="words"
+        maxlenght={50}
+        onBlur={() => setTouched(v => ({ ...v, first: true }))}
+        error={errFirst}
+        errorMode="bubble"
+      />
+      <Input
+        label="Last name"
+        value={lastName}
+        onChangeText={onChangeLast}
+        placeholder="Your last name"
+        autoCapitalize="words"
+        maxlenght={50}
+        onBlur={() => setTouched(v => ({ ...v, last: true }))}
+        error={errLast}
+        errorMode="bubble"
+      />
+      <Input
+        label="Email"
+        value={email}
+        onChangeText={onChangeEmail}
+        placeholder="you@example.com"
+        autoCapitalize="none"
+        keyboardType="email-address"
+        maxlenght={50}
+        onBlur={() => setTouched(v => ({ ...v, email: true }))}
+        error={errEmail}
+        errorMode="bubble"
+      />
+      <Input
+        label="Phone"
+        value={phone}
+        onChangeText={onChangePhone}
+        placeholder="+54..."
+        keyboardType="phone-pad"
+        maxlenght={50}
+        onBlur={() => setTouched(v => ({ ...v, phone: true }))}
+        error={errPhone}
+        errorMode="bubble"
+      />
+
+      <View style={{ height: 16 }} />
+      <Boton label="Save" onPress={onSave} />
+      <View style={{ height: 32 }} />
+    </ScrollView>
+  );
+}
+
+/* -------- Account -------- */
+type TouchedACC = { old: boolean; next: boolean };
+
+function AccountTab() {
+  const { loading, data, error, setError } = useProfileData();
+  const [saving, setSaving] = useState(false);
+  const [oldPass, setOldPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+
+  // Mensajes
+  const [inlineInfo, setInlineInfo] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null); // HTTP
+
+  // Bubbles
+  const [touched, setTouched] = useState<TouchedACC>({ old: false, next: false });
+  const markOnly = (k: keyof TouchedACC) =>
+    setTouched({ old: false, next: false, [k]: true });
+
+  useEffect(() => { setInlineInfo(null); }, [oldPass, newPass]);
+
+  const showOld = touched.old;
+  const showNew = touched.next;
+
+  const errOld = useMemo(() => {
+    if (!showOld) return undefined;
+    if (!oldPass) return 'Current password required';
+    return undefined;
+  }, [showOld, oldPass]);
+
+  const errNew = useMemo(() => {
+    if (!showNew) return undefined;
+    if (!newPass) return 'New password required';
+    if (newPass.length < 8) return 'At least 8 characters';
+    return undefined;
+  }, [showNew, newPass]);
+
+  const changePassword = async () => {
+    if (saving || loading) return;
+    setInlineInfo(null);
+
+    // Validación ordenada: old -> new
+    if (!oldPass) { markOnly('old'); return; }
+    if (!newPass || newPass.length < 8) { markOnly('next'); return; }
+
+    try {
+      setSaving(true);
+      const out = await requestForm<{ error?: number; msg?: string }>(
+        '/ax_change_password.php',
+        { old: oldPass, next: newPass }
+      );
+      if (!out.error) {
+        setInlineInfo('Password updated');
+        setOldPass(''); setNewPass('');
+        setTouched({ old: false, next: false });
+      } else setAlertMsg(out.msg || 'Could not update password'); // HTTP -> AppAlert
+    } catch (e: any) {
+      setAlertMsg(e?.message || 'Network error'); // HTTP -> AppAlert
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const [biometric, setBiometric] = useState(!!data?.biometric_enabled);
+  useEffect(() => { if (data?.biometric_enabled != null) setBiometric(!!data.biometric_enabled); }, [data]);
+  const toggleBiometric = () => setBiometric(prev => !prev);
+
+  if (loading) return <Loading />;
+
+  return (
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      {/* HTTP/servidor/red */}
+      {!!error && <AppAlert message={error} onClose={() => setError(null)} />}
+      {!!alertMsg && <AppAlert message={alertMsg} onClose={() => setAlertMsg(null)} />}
+      {/* info inline */}
+      {!!inlineInfo && <Text style={styles.inlineInfo}>{inlineInfo}</Text>}
+
+      <Text style={styles.sectionTitle}>Account</Text>
+      <Input label="Email" value={data?.email || ''} onChangeText={() => {}} placeholder="" />
+      <Text style={{ marginTop: 8, opacity: 0.6 }}>Email cannot be changed from the app.</Text>
+
+      <View style={{ height: 24 }} />
+      <Text style={styles.sectionTitle}>Change password</Text>
+      <Input
+        label="Current password"
+        value={oldPass}
+        onChangeText={setOldPass}
+        secureTextEntry
+        onBlur={() => setTouched(v => ({ ...v, old: true }))}
+        error={errOld}
+        errorMode="bubble"
+      />
+      <Input
+        label="New password"
+        value={newPass}
+        onChangeText={setNewPass}
+        secureTextEntry
+        onBlur={() => setTouched(v => ({ ...v, next: true }))}
+        error={errNew}
+        errorMode="bubble"
+      />
+      <View style={{ height: 8 }} />
+      <Boton label="Update Password" onPress={changePassword} />
+
+      <View style={{ height: 24 }} />
+      <Text style={styles.sectionTitle}>Security</Text>
+      <TouchableOpacity onPress={toggleBiometric} style={styles.row} accessibilityRole="switch" accessibilityState={{ checked: biometric }}>
+        <Text style={{ flex: 1 }}>Use biometrics to sign in</Text>
+        <Text>{biometric ? 'ON' : 'OFF'}</Text>
+      </TouchableOpacity>
+      <Text style={{ opacity: 0.6, marginTop: 4 }}>Requires device biometrics (Fingerprint/Face ID).</Text>
+
+      <View style={{ height: 32 }} />
+    </ScrollView>
+  );
+}
+
+/* -------- styles -------- */
+const styles = StyleSheet.create({
+  container: { padding: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  avatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' },
+  changePhoto: { fontSize: 12, textAlign: 'center', marginTop: 6, opacity: 0.7 },
+  name: { fontSize: 18, fontWeight: '700' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  inlineInfo: { color: '#08660b', marginBottom: 8 },
+});

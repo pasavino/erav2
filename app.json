@@ -6,9 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "platforms": [
-      "android"
-    ],
+    "platforms": ["android"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -18,7 +16,11 @@
       "supportsTablet": true,
       "icon": "./assets/icon.png",
       "newArchEnabled": true,
-      "bundleIdentifier": "com.easyrideafrica.erav2"
+      "bundleIdentifier": "com.easyrideafrica.erav2",
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need camera access to take your profile photo",
+        "NSPhotoLibraryUsageDescription": "We need access to your photos to update the avatar"
+      }
     },
     "android": {
       "package": "com.easyrideafrica.erav2",
@@ -29,7 +31,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "newArchEnabled": true
+      "newArchEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,7 +47,14 @@
       }
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "We need access to your photos to update the avatar",
+          "cameraPermission": "We need camera access to take your profile photo"
+        }
+      ]
     ]
   }
 }
