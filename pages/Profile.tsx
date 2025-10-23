@@ -1,7 +1,8 @@
 // /pages/Profile.tsx
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as ImagePicker from 'expo-image-picker';
 import Input from '../components/input';
 import Boton from '../components/boton';
@@ -53,13 +54,15 @@ function useProfileData() {
     (async () => {
       try {
         setAuthToken(token || '');
-        const out = await requestForm<{ data: ProfileData; msg?: string; error?: number }>('/ax_get_profile.php', {});
+        const out = await requestForm<{ data: ProfileData; msg?: string; error?: number }>(
+          '/ax_get_profile.php',
+          {}
+        );
         if (!out.error && out.data) {
           const d: ProfileData = {
             ...out.data,
-            avatar_url: bust(out.data.avatar_url), // ← importante            
+            avatar_url: bust(out.data.avatar_url),
           };
-          console.log(out.data.avatar_url);
           mounted && setData(d);
         } else mounted && setError(out?.msg || 'Could not load profile');
       } catch (e: any) {
@@ -84,12 +87,13 @@ function Loading() {
 }
 
 function HeaderAvatar({
-  avatar, name, onPick, onSelfie,
-}: { avatar?: string | null; name: string; onPick: () => void; onSelfie: () => void; }) {
+  avatar, name, onPick, onSelfie, uploading,
+}: { avatar?: string | null; name: string; onPick: () => void; onSelfie: () => void; uploading?: boolean; }) {
+  const disabled = !!uploading;
   return (
     <View style={styles.header}>
-      <View>
-        <TouchableOpacity onPress={onPick} accessibilityLabel="Change profile photo">
+      <View style={styles.avatarCol}>
+        <TouchableOpacity onPress={onPick} accessibilityLabel="Change profile photo" disabled={disabled}>
           {avatar ? (
             <Image source={{ uri: avatar }} style={styles.avatar} />
           ) : (
@@ -99,16 +103,17 @@ function HeaderAvatar({
           )}
         </TouchableOpacity>
 
-        <Text style={styles.changePhoto}>
-          <Text onPress={onPick}>Change photo</Text>
+        <Text style={[styles.changePhoto, disabled && { opacity: 0.4 }]}>
+          <Text onPress={!disabled ? onPick : undefined}>Change photo</Text>
           <Text> / </Text>
-          <Text onPress={onSelfie}>Take selfie</Text>
+          <Text onPress={!disabled ? onSelfie : undefined}>Take selfie</Text>
         </Text>
       </View>
 
-      <View style={{ flex: 1, marginLeft: 20 }}>
+      <View style={{ flex: 1, marginLeft: 8, alignSelf: 'flex-start' }}>
         <Text style={styles.name} numberOfLines={1}>{name}</Text>
       </View>
+
     </View>
   );
 }
@@ -119,6 +124,7 @@ type TouchedPI = { first: boolean; last: boolean; email: boolean; phone: boolean
 function PersonalInfoTab() {
   const { loading, data, setData, error, setError } = useProfileData();
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [firstName, setFirstName] = useState('');
   const [lastName,  setLastName]  = useState('');
@@ -187,7 +193,7 @@ function PersonalInfoTab() {
   }, [touched.phone, phone]);
 
   const onPickAvatar = async () => {
-    if (saving) return;
+    if (saving || uploadingAvatar) return;
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
@@ -195,17 +201,19 @@ function PersonalInfoTab() {
         return;
       }
       const res = await ImagePicker.launchImageLibraryAsync({
-        quality: 0.8, allowsEditing: true, aspect: [1,1], base64: true
+        quality: 0.8,
+        allowsEditing: true,
+        aspect: [1, 1],
       });
       if (res.canceled || !res.assets?.length) return;
-      await uploadAndSet(res.assets[0].base64 as string);
+      await uploadAndSet(res.assets[0]);
     } catch (e: any) {
       setAlertMsg(e?.message || 'Image picker error');
     }
   };
 
   const onTakeSelfie = async () => {
-    if (saving) return;
+    if (saving || uploadingAvatar) return;
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
@@ -217,36 +225,45 @@ function PersonalInfoTab() {
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
-        base64: true,
       });
       if (res.canceled || !res.assets?.length) return;
-      await uploadAndSet(res.assets[0].base64 as string);
+      await uploadAndSet(res.assets[0]);
     } catch (e: any) {
       setAlertMsg(e?.message || 'Camera error');
     }
   };
 
-  const uploadAndSet = async (base64: string) => {
+  // Subir como multipart usando requestForm (que arma FormData internamente si le pasamos un archivo)
+  const uploadAndSet = async (asset: ImagePicker.ImagePickerAsset) => {
     try {
-      setSaving(true);
+      setUploadingAvatar(true);
+
+      const extFromName = asset.fileName?.match(/\.([a-zA-Z0-9]+)$/)?.[1]?.toLowerCase();
+      const guessedExt = extFromName || (asset.mimeType === 'image/png' ? 'png' : 'jpg');
+      const name = asset.fileName || `avatar-${Date.now()}.${guessedExt}`;
+      const type = asset.mimeType || (guessedExt === 'png' ? 'image/png' : 'image/jpeg');
+
+      const file: any = { uri: asset.uri, name, type };
+
       const up = await requestForm<{ url?: string; error?: number; msg?: string }>(
         '/ax_upload_avatar.php',
-        { avatar_base64: base64 ?? '' }
+        { avatar: file }
       );
+
       if (!up.error && up.url) {
-        const bust = `${up.url}?v=${Date.now()}`;
+        const bust = `${up.url}${up.url.includes('?') ? '&' : '?'}v=${Date.now()}`;
         setData && setData({ ...(data as any), avatar_url: bust });
         setInlineInfo('Photo updated');
       } else setAlertMsg(up.msg || 'Could not update photo'); // HTTP -> AppAlert
     } catch (e: any) {
       setAlertMsg(e?.message || 'Upload error'); // HTTP -> AppAlert
     } finally {
-      setSaving(false);
+      setUploadingAvatar(false);
     }
   };
 
   const onSave = async () => {
-    if (saving || loading) return;
+    if (saving || loading || uploadingAvatar) return;
     setInlineInfo(null);
 
     // Validación secuencial: Nombre -> Apellido -> Email -> Teléfono
@@ -289,7 +306,15 @@ function PersonalInfoTab() {
   if (loading) return <Loading />;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <KeyboardAwareScrollView
+      contentContainerStyle={[styles.container, { paddingBottom: 140 }]}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
+      enableAutomaticScroll
+      extraScrollHeight={140}
+      extraHeight={140}
+    >
       {/* HTTP/servidor/red */}
       {!!error && <AppAlert message={error} onClose={() => setError(null)} />}
       {!!alertMsg && <AppAlert message={alertMsg} onClose={() => setAlertMsg(null)} />}
@@ -301,6 +326,7 @@ function PersonalInfoTab() {
         name={`${data?.first_name ?? ''} ${data?.last_name ?? ''}`.trim() || (data?.email ?? '')}
         onPick={onPickAvatar}
         onSelfie={onTakeSelfie}
+        uploading={uploadingAvatar}
       />
 
       <Input
@@ -350,9 +376,17 @@ function PersonalInfoTab() {
       />
 
       <View style={{ height: 16 }} />
-      <Boton label="Save" onPress={onSave} />
+      <Boton label={saving ? "Wait...." : "Save"} onPress={() => { if (!saving) onSave(); }}/>
       <View style={{ height: 32 }} />
-    </ScrollView>
+
+      {/* Overlay centrado mientras sube el avatar */}
+      {uploadingAvatar && (
+        <View style={styles.fullscreenOverlay} pointerEvents="auto">
+          <ActivityIndicator size="large" />
+          <Text style={styles.overlayCenterText}>Wait…</Text>
+        </View>
+      )}
+    </KeyboardAwareScrollView>
   );
 }
 
@@ -425,7 +459,15 @@ function AccountTab() {
   if (loading) return <Loading />;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <KeyboardAwareScrollView
+      contentContainerStyle={[styles.container, { paddingBottom: 120 }]}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      enableOnAndroid
+      enableAutomaticScroll
+      extraScrollHeight={120}
+      extraHeight={120}
+    >
       {/* HTTP/servidor/red */}
       {!!error && <AppAlert message={error} onClose={() => setError(null)} />}
       {!!alertMsg && <AppAlert message={alertMsg} onClose={() => setAlertMsg(null)} />}
@@ -468,19 +510,23 @@ function AccountTab() {
       <Text style={{ opacity: 0.6, marginTop: 4 }}>Requires device biometrics (Fingerprint/Face ID).</Text>
 
       <View style={{ height: 32 }} />
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
 /* -------- styles -------- */
 const styles = StyleSheet.create({
   container: { padding: 16 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  // styles
+  header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
+  avatarCol: { width: 84, alignItems: 'center', marginRight: 8 },
   avatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' },
-  changePhoto: { fontSize: 12, textAlign: 'center', marginTop: 6, opacity: 0.7 },
+  changePhoto: {marginLeft:100, fontSize: 12, textAlign: 'center', marginTop: 6, opacity: 0.7, width:200 },
   name: { fontSize: 18, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   inlineInfo: { color: '#08660b', marginBottom: 8 },
+  fullscreenOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
+  overlayCenterText: { color: '#fff', marginTop: 10, fontWeight: '600' },
 });

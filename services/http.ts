@@ -45,32 +45,58 @@ export async function ensureOk<T>(p: Promise<ApiResponse<T>>): Promise<T> {
   return extras as T;
 }
 
-// === Form-POST (application/x-www-form-urlencoded) ===
-export async function requestForm<T>(endpoint: string, data: Record<string, string>): Promise<ApiResponse<T>> {
+// ====== SOPORTE DE ARCHIVOS (mínimo y opcional) ======
+// Si algún valor tiene forma { uri, name, type }, enviamos multipart/form-data.
+// Si no, mantenemos el comportamiento actual: x-www-form-urlencoded.
+export type FilePart = { uri: string; name: string; type: string };
+const isFilePart = (v: any): v is FilePart => !!v && typeof v === 'object' &&
+  typeof v.uri === 'string' && typeof v.name === 'string' && typeof v.type === 'string';
+
+// === Form-POST (application/x-www-form-urlencoded o multipart si hay archivo) ===
+export async function requestForm<T>(endpoint: string, data: Record<string, any>): Promise<ApiResponse<T>> {
   const url = `${BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   const token = AUTH_TOKEN || null;
 
-  const entries = Object.entries(data || {});
-  if (token) entries.push(['token', token]); // <-- token también en el BODY
+  const hasFile = Object.values(data || {}).some(isFilePart);
 
-  const body = entries
-    .map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v ?? '')}`)
-    .join('&');
+  let body: any;
+  const headers: Record<string, string> = {};
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-  };
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
     headers['X-Auth-Token'] = token;
   }
 
-  console.log(`[HTTP] POST ${endpoint} ${token ? 'token OK' : 'SIN TOKEN'}`);
+  if (hasFile) {
+    // ---------- multipart/form-data ----------
+    const form = new FormData();
+    Object.entries(data || {}).forEach(([k, v]) => {
+      if (isFilePart(v)) {
+        // RN/Expo requiere el objeto { uri, name, type }
+        form.append(k, v as any);
+      } else if (v !== undefined && v !== null) {
+        form.append(k, String(v));
+      }
+    });
+    // también mandamos token en el cuerpo (como antes)
+    if (token) form.append('token', token);
+    body = form; // no seteamos Content-Type: fetch agrega el boundary
+  } else {
+    // ---------- x-www-form-urlencoded (comportamiento actual) ----------
+    const entries = Object.entries(data || {});
+    if (token) entries.push(['token', token]); // token también en el BODY
+    headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
+    body = entries
+      .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v ?? '')}`)
+      .join('&');
+  }
+
+  console.log(`[HTTP] POST ${endpoint} ${token ? 'token OK' : 'SIN TOKEN'}${hasFile ? ' [multipart]' : ''}`);
 
   const res = await fetch(url, { method: 'POST', headers, body });
   const text = await res.text();
   let json: any = {};
-  try { json = text ? JSON.parse(text) : {}; } 
+  try { json = text ? JSON.parse(text) : {}; }
   catch { throw new Error(`Respuesta no-JSON (${res.status}): ${text.slice(0,120)}`); }
   if (!res.ok) throw new Error(json?.msg || `HTTP ${res.status}`);
   if (typeof json.error !== 'number') json.error = 0;
