@@ -8,6 +8,8 @@ import Boton from '../components/boton';
 import Input from '../components/input';
 import AppAlert from '../components/appAlert';
 import { useAuth } from '../context/Auth';
+// Fallback directo al servicio si el contexto no provee register
+import { auth as authSvc } from '../services/auth';
 
 type FieldErrors = Partial<{
   first_name: string;
@@ -20,7 +22,7 @@ type FieldErrors = Partial<{
 
 export default function Register() {
   const nav = useNavigation<any>();
-  const auth = useAuth();
+  const auth = useAuth() as any; // no desestructurar
 
   const [firstName, setFirstName] = useState('');
   const [lastName,  setLastName]  = useState('');
@@ -37,7 +39,6 @@ export default function Register() {
 
   const isEmail = (s: string) => /^\S+@\S+\.\S+$/.test(s);
 
-  // flags de visualización de errores
   const showFirst   = submitted || touched.first;
   const showLast    = submitted || touched.last;
   const showEmail   = submitted || touched.email;
@@ -107,9 +108,21 @@ export default function Register() {
     try {
       setLoading(true);
 
-      // Fix TS: obtener la función con bracket notation
-      const registerFn = (auth as any)?.['register'];
-      if (typeof registerFn !== 'function') {
+      // 1) intentar contexto
+      const ctxRegister =
+        (auth?.register && typeof auth.register === 'function' && auth.register) ||
+        undefined;
+
+      // 2) fallback a servicio
+      const svcRegister =
+        (authSvc as any)?.register && typeof (authSvc as any).register === 'function'
+          ? (authSvc as any).register
+          : undefined;
+
+      const registerFn = ctxRegister ?? svcRegister;
+
+      if (!registerFn) {
+        console.warn('[Register] auth.register no disponible y services/auth.register tampoco. auth =', auth);
         setAlertMsg('Config error: register no disponible');
         return;
       }
@@ -118,7 +131,7 @@ export default function Register() {
         first_name: firstName.trim(),
         last_name:  lastName.trim(),
         email:      email.trim().toLowerCase(),
-        phone:      phone.trim() || '',
+        phone:      (phone ?? '').trim(),
         password,
       });
 
@@ -139,7 +152,7 @@ export default function Register() {
     } finally {
       setLoading(false);
     }
-};
+  };
 
   return (
     <>
@@ -196,7 +209,7 @@ export default function Register() {
           onBlur={() => setTouched(v => ({ ...v, phone: true }))}
           error={errPhone}
           errorMode="bubble"
-          maxlenght={20}
+          maxlenght={50}
         />
 
         <Input
@@ -218,10 +231,12 @@ export default function Register() {
         )}
       </KeyboardAwareScrollView>
 
-      <AppAlert
-        message={alertMsg || ''}
-        onClose={() => setAlertMsg(null)}
-      />
+      {!!alertMsg && (
+        <AppAlert
+          message={alertMsg}
+          onClose={() => setAlertMsg(null)}
+        />
+      )}
     </>
   );
 }
