@@ -4,6 +4,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } fr
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
 import Input from '../components/input';
 import Boton from '../components/boton';
 import AppAlert from '../components/appAlert';
@@ -33,7 +34,7 @@ export default function Profile() {
         }}
       >
         <Tab.Screen name="Personal Info" component={PersonalInfoTab} />
-        <Tab.Screen name="Account" component={AccountTab} />
+        <Tab.Screen name="Account" component={AccountTab} />        
       </Tab.Navigator>
     </View>
   );
@@ -252,7 +253,7 @@ function PersonalInfoTab() {
 
       if (!up.error && up.url) {
         const bust = `${up.url}${up.url.includes('?') ? '&' : '?'}v=${Date.now()}`;
-        setData && setData({ ...(data as any), avatar_url: bust });
+        setData?.(prev => ({ ...(prev ?? {} as any), avatar_url: bust }));
         setInlineInfo('Photo updated');
       } else setAlertMsg(up.msg || 'Could not update photo'); // HTTP -> AppAlert
     } catch (e: any) {
@@ -293,7 +294,7 @@ function PersonalInfoTab() {
         { first_name: fn, last_name: ln, email: em, phone: ph }
       );
       if (!out.error) {
-        setData && setData({ ...(data as any), first_name: fn, last_name: ln, email: em, phone: ph });
+        setData?.(prev => ({ ...(prev ?? {} as any), first_name: fn, last_name: ln, email: em, phone: ph }));
         setInlineInfo('Profile updated');
       } else setAlertMsg(out.msg || 'Could not save changes'); // HTTP -> AppAlert
     } catch (e: any) {
@@ -375,8 +376,21 @@ function PersonalInfoTab() {
         errorMode="bubble"
       />
 
-      <View style={{ height: 16 }} />
-      <Boton label={saving ? "Wait...." : "Save"} onPress={() => { if (!saving) onSave(); }}/>
+      <View style={{ marginTop:12, marginBottom:4 }}>
+        <Boton
+          label={saving ? 'Saving…' : 'Save'}
+          onPress={() => { if (!saving) onSave(); }}
+        />
+      </View>
+
+      {/* Overlay bloqueante durante el guardado (igual a Home) */}
+      {saving && (
+        <View style={styles.overlay} pointerEvents="auto">
+          <ActivityIndicator size="large" />
+          <Text style={styles.overlayText}>Saving… please wait</Text>
+        </View>
+      )}
+
       <View style={{ height: 32 }} />
 
       {/* Overlay centrado mientras sube el avatar */}
@@ -390,71 +404,24 @@ function PersonalInfoTab() {
   );
 }
 
-/* -------- Account -------- */
-type TouchedACC = { old: boolean; next: boolean };
-
+/* -------- Account (links de Settings) -------- */
 function AccountTab() {
+  const navigation = useNavigation<any>();
   const { loading, data, error, setError } = useProfileData();
-  const [saving, setSaving] = useState(false);
-  const [oldPass, setOldPass] = useState('');
-  const [newPass, setNewPass] = useState('');
-
-  // Mensajes
   const [inlineInfo, setInlineInfo] = useState<string | null>(null);
-  const [alertMsg, setAlertMsg] = useState<string | null>(null); // HTTP
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
 
-  // Bubbles
-  const [touched, setTouched] = useState<TouchedACC>({ old: false, next: false });
-  const markOnly = (k: keyof TouchedACC) =>
-    setTouched({ old: false, next: false, [k]: true });
-
-  useEffect(() => { setInlineInfo(null); }, [oldPass, newPass]);
-
-  const showOld = touched.old;
-  const showNew = touched.next;
-
-  const errOld = useMemo(() => {
-    if (!showOld) return undefined;
-    if (!oldPass) return 'Current password required';
-    return undefined;
-  }, [showOld, oldPass]);
-
-  const errNew = useMemo(() => {
-    if (!showNew) return undefined;
-    if (!newPass) return 'New password required';
-    if (newPass.length < 8) return 'At least 8 characters';
-    return undefined;
-  }, [showNew, newPass]);
-
-  const changePassword = async () => {
-    if (saving || loading) return;
-    setInlineInfo(null);
-
-    // Validación ordenada: old -> new
-    if (!oldPass) { markOnly('old'); return; }
-    if (!newPass || newPass.length < 8) { markOnly('next'); return; }
-
-    try {
-      setSaving(true);
-      const out = await requestForm<{ error?: number; msg?: string }>(
-        '/ax_change_password.php',
-        { old: oldPass, next: newPass }
-      );
-      if (!out.error) {
-        setInlineInfo('Password updated');
-        setOldPass(''); setNewPass('');
-        setTouched({ old: false, next: false });
-      } else setAlertMsg(out.msg || 'Could not update password'); // HTTP -> AppAlert
-    } catch (e: any) {
-      setAlertMsg(e?.message || 'Network error'); // HTTP -> AppAlert
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const [biometric, setBiometric] = useState(!!data?.biometric_enabled);
-  useEffect(() => { if (data?.biometric_enabled != null) setBiometric(!!data.biometric_enabled); }, [data]);
-  const toggleBiometric = () => setBiometric(prev => !prev);
+  // ---- Helper para “links” de navegación ----
+  const NavItem = ({ title, to, rightText }: { title: string; to: string; rightText?: string }) => (
+    <TouchableOpacity
+      onPress={() => navigation.navigate(to)}
+      style={[styles.row, { justifyContent: 'space-between' }]}
+      accessibilityRole="button"
+    >
+      <Text style={{ flex: 1 }}>{title}</Text>
+      <Text style={{ opacity: 0.5 }}>{rightText ?? '›'}</Text>
+    </TouchableOpacity>
+  );
 
   if (loading) return <Loading />;
 
@@ -474,40 +441,16 @@ function AccountTab() {
       {/* info inline */}
       {!!inlineInfo && <Text style={styles.inlineInfo}>{inlineInfo}</Text>}
 
-      <Text style={styles.sectionTitle}>Account</Text>
-      <Input label="Email" value={data?.email || ''} onChangeText={() => {}} placeholder="" />
-      <Text style={{ marginTop: 8, opacity: 0.6 }}>Email cannot be changed from the app.</Text>
-
       <View style={{ height: 24 }} />
-      <Text style={styles.sectionTitle}>Change password</Text>
-      <Input
-        label="Current password"
-        value={oldPass}
-        onChangeText={setOldPass}
-        secureTextEntry
-        onBlur={() => setTouched(v => ({ ...v, old: true }))}
-        error={errOld}
-        errorMode="bubble"
-      />
-      <Input
-        label="New password"
-        value={newPass}
-        onChangeText={setNewPass}
-        secureTextEntry
-        onBlur={() => setTouched(v => ({ ...v, next: true }))}
-        error={errNew}
-        errorMode="bubble"
-      />
-      <View style={{ height: 8 }} />
-      <Boton label="Update Password" onPress={changePassword} />
+      <Text style={styles.sectionTitle}>Settings</Text>
 
-      <View style={{ height: 24 }} />
-      <Text style={styles.sectionTitle}>Security</Text>
-      <TouchableOpacity onPress={toggleBiometric} style={styles.row} accessibilityRole="switch" accessibilityState={{ checked: biometric }}>
-        <Text style={{ flex: 1 }}>Use biometrics to sign in</Text>
-        <Text>{biometric ? 'ON' : 'OFF'}</Text>
-      </TouchableOpacity>
-      <Text style={{ opacity: 0.6, marginTop: 4 }}>Requires device biometrics (Fingerprint/Face ID).</Text>
+      {/* LINKS / ACCESOS a otras pantallas */}
+      <NavItem title="My vehicles" to="Car" />
+      <NavItem title="Trip preferences" to="TripPreferences" />
+      <NavItem title="My wallet" to="MyWallet" />
+      <NavItem title="Notifications" to="Notifications" />
+      <NavItem title="Privacy & Terms" to="PrivacyTerms" />
+      <NavItem title="About" to="About" />
 
       <View style={{ height: 32 }} />
     </KeyboardAwareScrollView>
@@ -521,7 +464,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 16 },
   avatarCol: { width: 84, alignItems: 'center', marginRight: 8 },
   avatar: { width: 84, height: 84, borderRadius: 42, backgroundColor: '#eee', alignItems: 'center', justifyContent: 'center' },
-  changePhoto: {marginLeft:100, fontSize: 12, textAlign: 'center', marginTop: 6, opacity: 0.7, width:200 },
+  changePhoto: { marginLeft: 100, fontSize: 12, textAlign: 'center', marginTop: 6, opacity: 0.7, width: 200 },
   name: { fontSize: 18, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
@@ -529,4 +472,7 @@ const styles = StyleSheet.create({
   inlineInfo: { color: '#08660b', marginBottom: 8 },
   fullscreenOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },
   overlayCenterText: { color: '#fff', marginTop: 10, fontWeight: '600' },
+  // overlay estilo Home.tsx
+  overlay: { position:'absolute', left:0, top:0, right:0, bottom:0, backgroundColor:'rgba(255, 255, 255, 0.25)', alignItems:'center', justifyContent:'center' },
+  overlayText: { marginTop:8, color:'#fff', fontSize:14 },
 });

@@ -29,18 +29,17 @@ function Gate() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {token ? (
-        <>
-          <Stack.Screen name="MainTabs" component={MainTabs} />
-          {/* ✅ Deja TripFindResult en el stack padre para navegar desde las tabs */}
-          <Stack.Screen name="TripFindResult" component={TripFindResult} />
-        </>
-      ) : (
-        <>
-          <Stack.Screen name="Login" component={Login} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-          <Stack.Screen name="Register" component={Register} />
-        </>
-      )}
+      <>
+        <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen name="TripFindResult" component={TripFindResult} />
+      </>
+    ) : (
+      <>
+        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+        <Stack.Screen name="Register" component={Register} />
+      </>
+    )}
     </Stack.Navigator>
   );
 }

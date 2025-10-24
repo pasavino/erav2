@@ -11,17 +11,19 @@ import Publish from './Publish';
 import Home from './Home'; // Search page
 import TripFindResult from './TripFindResult';
 import AddVehicle from './AddVehicle';
+import TripPreferences from './TripPreferences';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
 const CarStackNav = createNativeStackNavigator();
+const ProfileStackNav = createNativeStackNavigator();
 
 function HomeStack() {
   return (
     <HomeStackNav.Navigator screenOptions={{ headerShown: false }}>
       {/* Default: search page */}
       <HomeStackNav.Screen name="Home" component={Home} />
-      {/* Mantener resultados dentro del stack de Home para conservar la tab bar */}
+      {/* Resultados de búsqueda dentro del stack de Home para conservar la tab bar */}
       <HomeStackNav.Screen name="TripFindResult" component={TripFindResult} />
     </HomeStackNav.Navigator>
   );
@@ -36,15 +38,34 @@ function CarStack() {
   );
 }
 
+function ProfileStack() {
+  return (
+    <ProfileStackNav.Navigator>
+      {/* Pantalla principal del perfil (sin header propio) */}
+      <ProfileStackNav.Screen
+        name="ProfileHome"
+        component={Profile}
+        options={{ headerShown: false }}
+      />
+      {/* Preferencias: mantiene bottom tabs porque está dentro del stack del tab Profile */}
+      <ProfileStackNav.Screen
+        name="TripPreferences"
+        component={TripPreferences}
+        options={{ title: 'Trip preferences' }}
+      />
+    </ProfileStackNav.Navigator>
+  );
+}
+
 export default function MainTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Home" // la app abre en Home (búsqueda)
+      initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarLabelStyle: { fontSize: 12 },
         tabBarHideOnKeyboard: false,
-        tabBarStyle: { height:100 },
+        tabBarStyle: { height: 100 },
         tabBarActiveTintColor: '#111',
         tabBarInactiveTintColor: '#9aa0a6',
         tabBarIcon: ({ focused, size, color }) => {
@@ -61,7 +82,7 @@ export default function MainTabs() {
       <Tab.Screen name="Home" component={HomeStack} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="Publish ride" component={Publish} options={{ tabBarLabel: 'Publish ride' }} />
       <Tab.Screen name="Car" component={CarStack} options={{ tabBarLabel: 'My Car' }} />
-      <Tab.Screen name="Profile" component={Profile} options={{ tabBarLabel: 'Profile' }} />
+      <Tab.Screen name="Profile" component={ProfileStack} options={{ tabBarLabel: 'Profile' }} />
     </Tab.Navigator>
   );
 }
