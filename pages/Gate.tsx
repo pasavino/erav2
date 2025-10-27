@@ -1,67 +1,78 @@
 // /pages/Gate.tsx
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { useAuth } from '../context/Auth';
 import MainTabs from './MainTabs';
 import AuthStack from './AuthStack';
+import { useAuth } from '../context/Auth';
 import { requestForm, setAuthToken } from '../services/http';
-import { auth } from '../services/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+type Mode = 'checking' | 'auth' | 'main';
 
 export default function Gate() {
-  const { token, loading } = useAuth();
+  const authCtx = useAuth?.();
+  const token = authCtx?.token ?? null;
+  const loading = authCtx?.loading ?? false;
+  const ctxLogout = authCtx?.logout;
 
-  // Chequeo puntual del token cuando la app arranca o cambia el token
-  const [checking, setChecking] = useState(true);
-  const [forceLogin, setForceLogin] = useState(false);
+  const [mode, setMode] = useState<Mode>('checking');
+  const [navSeed, setNavSeed] = useState(0);
+
+  const bump = () => setNavSeed(s => s + 1);
+
+  const hardLogout = async () => {
+    // Limpia sesión a prueba de fallos
+    try { await (ctxLogout?.() ?? Promise.resolve()); } catch {}
+    try { await AsyncStorage.removeItem('auth_token'); } catch {}
+    setAuthToken(null);
+    setMode('auth');
+    bump();
+  };
 
   useEffect(() => {
     let alive = true;
 
-    const run = async () => {
-      // Primero esperamos a que termine el loading del contexto
-      if (loading) { setChecking(true); return; }
+    const validate = async () => {
+      if (loading) { setMode('checking'); return; }
 
-      // Si no hay token, no hay nada que validar
-      if (!token) {
-        if (alive) { setForceLogin(true); setChecking(false); }
-        return;
-      }
+      // Sin token => directo a Login
+      if (!token) { await hardLogout(); return; }
 
       try {
-        setChecking(true);
+        setMode('checking');
         setAuthToken(token);
-        // Nuestro backend: error=0 -> OK; error=1/!=0 -> token inválido/ausente
+
+        // Backend: error=0 ok ; !=0 token inválido
         const out: any = await requestForm('/ax_validate.php', {});
         if (!alive) return;
-        const err = Number(out?.error || 0);
+
+        const err = Number(out?.error ?? 1);
         if (err === 0) {
-          setForceLogin(false);
+          setMode('main');
+          bump(); // remount para evitar estados colgados
         } else {
-          // Token inválido: limpiar y forzar Login
-          try { await auth.logout?.(); } catch {}
-          setForceLogin(true);
+          await hardLogout();
         }
-      } catch (_e) {
-        // En error de red, por claridad llevamos a Login (estricto como pediste)
-        try { await auth.logout?.(); } catch {}
-        if (alive) setForceLogin(true);
-      } finally {
-        if (alive) setChecking(false);
+      } catch {
+        // Red/parse error => estrictos a Login
+        await hardLogout();
       }
     };
 
-    run();
+    validate();
     return () => { alive = false; };
   }, [token, loading]);
 
-  if (loading || checking) {
+  if (mode === 'checking') {
     return (
-      <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator />
       </View>
     );
   }
 
-  // Si el token es inválido o no existe -> Login (AuthStack). Caso contrario -> MainTabs
-  return (!forceLogin && token) ? <MainTabs /> : <AuthStack />;
+  // Control absoluto por modo; keys únicas para remount del árbol
+  return mode === 'main'
+    ? <MainTabs key={`main-${navSeed}`} />
+    : <AuthStack key={`auth-${navSeed}`} />;
 }

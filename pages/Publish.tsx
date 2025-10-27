@@ -50,6 +50,10 @@ type CitiesResponse = {
 };
 
 const Tab = createMaterialTopTabNavigator();
+const naira = (v: any) => {
+  const n = Number(v);
+  return isFinite(n) ? `₦ ${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : String(v ?? '');
+};
 
 /* ------------------------ Success modal con check ------------------------ */
 function SuccessModal({
@@ -178,7 +182,7 @@ function PublishedListTab() {
             {item.DiaHora}
           </Text>
           <Text style={styles.dot}>·</Text>
-          <Text style={styles.secondary}>Price: {String(item.Precio)}</Text>
+          <Text style={styles.secondary}>Price: {String(naira(item.Precio))}</Text>
           <Text style={styles.dot}>·</Text>
           <Text style={styles.secondary}>Seats:  {item.Cupos} / {item.Reservados}</Text>
         </View>
