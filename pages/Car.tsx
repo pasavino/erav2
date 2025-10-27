@@ -80,7 +80,7 @@ export default function Car() {
     try {
       setDeleting(true);
       await ensureOk(
-        requestForm('/ax_delete_vehiculos.php', { // 👈 endpoint validado
+        requestForm('/ax_delete_vehiculos.php', {
           IdVehiculo: String(confirmItem.IdVehiculo),
           // IdUsuario opcional si el backend usa Auth_Require()
         })
@@ -145,7 +145,7 @@ export default function Car() {
         }}
       />
 
-      {/* Modal de confirmación */}
+      {/* Modal de confirmación (look & feel como Published.tsx) */}
       <Modal
         visible={!!confirmItem}
         transparent
@@ -153,41 +153,40 @@ export default function Car() {
         onRequestClose={() => setConfirmItem(null)}
       >
         <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalIconRow}>
-              <Ionicons name="alert-circle" size={28} />
-            </View>
+          <View style={styles.modalCardPretty}>
+            <Ionicons name="alert-circle" size={36} color="#D32F2F" style={styles.modalIcon} />
             <Text style={styles.modalTitle}>Delete vehicle?</Text>
-            <Text style={styles.modalMsg}>
+            <Text style={styles.modalMessage}>
               Are you sure you want to delete this vehicle?
               If the vehicle has assigned trips, it cannot be deleted.
             </Text>
 
-            <View style={styles.modalBtns}>
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.btnGhost, deleting && styles.btnDisabled]}
+                onPress={() => setConfirmItem(null)}
                 disabled={deleting}
-                onPress={() => {
-                  if (!deleting) setConfirmItem(null);
-                }}
+                style={[styles.modalBtn, styles.modalBtnCancel, deleting && styles.btnDisabled]}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Text style={styles.btnGhostText}>Cancel</Text>
+                <Text style={styles.modalBtnText}>Cancel</Text>
               </TouchableOpacity>
 
-              {/* Si Boton no tiene 'disabled'; lo desactivamos con pointerEvents */}
-              <View
-                style={[deleting && styles.btnDisabled, { borderRadius: 10 }]}
-                pointerEvents={deleting ? 'none' : 'auto'}
+              <TouchableOpacity
+                onPress={confirmDelete}
+                disabled={deleting}
+                style={[styles.modalBtn, styles.modalBtnDelete, deleting && styles.btnDisabled]}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Boton label={deleting ? 'Deleting...' : 'Delete'} onPress={confirmDelete} />
-              </View>
+                <Text style={[styles.modalBtnText, styles.modalBtnTextDelete]}>
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* Modal de error */}
+      {/* Modal de error (look & feel como Published.tsx) */}
       <Modal
         visible={!!errorMsg}
         transparent
@@ -195,14 +194,18 @@ export default function Car() {
         onRequestClose={() => setErrorMsg(null)}
       >
         <View style={styles.overlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalIconRow}>
-              <Ionicons name="close-circle" size={28} color="#b91c1c" />
-            </View>
-            <Text style={styles.modalTitle}>Something went wrong</Text>
-            <Text style={styles.modalMsg}>{errorMsg}</Text>
-            <View style={[styles.modalBtns, { justifyContent: 'center' }]}>
-              <Boton label="OK" onPress={() => setErrorMsg(null)} />
+          <View style={styles.modalCardPretty}>
+            <Ionicons name="alert-circle" size={36} color="#D32F2F" style={styles.modalIcon} />
+            <Text style={styles.modalTitle}>Error</Text>
+            <Text style={styles.modalMessage}>{errorMsg}</Text>
+            <View style={styles.modalActionsSingle}>
+              <TouchableOpacity
+                onPress={() => setErrorMsg(null)}
+                style={[styles.modalBtn, styles.modalBtnDelete]}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={[styles.modalBtnText, styles.modalBtnTextDelete]}>OK</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -228,6 +231,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    // si tu RN soporta gap, puedes dejarlo; si no, usa margins
     gap: 12,
   },
   muted: { color: '#6b7280' },
@@ -250,6 +254,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '600' },
   subtitle: { color: '#6b7280' },
 
+  // Overlay del modal
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -257,35 +262,44 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
-  modalCard: {
+
+  // Tarjeta bonita (mismo look & feel que Published.tsx)
+  modalCardPretty: {
     width: '100%',
     maxWidth: 420,
     backgroundColor: '#fff',
     borderRadius: 16,
     padding: 18,
-    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    alignItems: 'center',
   },
-  modalIconRow: { alignItems: 'center', marginBottom: 4 },
+  modalIcon: { marginBottom: 8 },
   modalTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
-  modalMsg: { textAlign: 'center', color: '#4b5563' },
+  modalMessage: { marginTop: 6, color: '#333', textAlign: 'center' },
 
-  modalBtns: {
+  modalActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    // si tu RN soporta gap, puedes dejarlo; si no, usa margins
     gap: 12,
-    marginTop: 12,
+    marginTop: 14,
+    alignSelf: 'stretch',
   },
-  btnGhost: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
+  modalActionsSingle: {
+    marginTop: 14,
+    alignSelf: 'stretch',
     alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
   },
-  btnGhostText: { color: '#111827', fontWeight: '600', textAlign: 'center' },
+
+  modalBtn: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10, borderWidth: 1 },
+  modalBtnCancel: { borderColor: '#cfcfcf', backgroundColor: '#fff' },
+  modalBtnDelete: { borderColor: '#D32F2F', backgroundColor: '#FDECEA' },
+  modalBtnText: { fontWeight: '600', color: '#333' },
+  modalBtnTextDelete: { color: '#D32F2F', fontWeight: '700' },
   btnDisabled: { opacity: 0.5 },
 });
