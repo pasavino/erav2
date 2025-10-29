@@ -12,6 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Register from './pages/Register';
 import TripFindResult from './pages/TripFindResult'; // ya lo tenías importado
 import { AuthProvider, useAuth } from './context/Auth';
+import BookTrip from './pages/BookTrip';
 
 // usamos tu capa http para respetar headers/esquema del backend
 import { requestForm, setAuthToken } from './services/http';
@@ -109,6 +110,7 @@ function Gate() {
           <Stack.Screen name="TripFindResult" component={TripFindResult} />
           {/* Alias para cualquier RESET a 'Home' */}
           <Stack.Screen name="Home" component={MainTabs} />
+          <Stack.Screen name="BookTrip" component={BookTrip} />
         </>
       ) : (
         <>

@@ -12,6 +12,7 @@ import Home from './Home'; // Search page
 import TripFindResult from './TripFindResult';
 import AddVehicle from './AddVehicle';
 import TripPreferences from './TripPreferences';
+import BookTrip from './BookTrip';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
@@ -25,6 +26,7 @@ function HomeStack() {
       <HomeStackNav.Screen name="Home" component={Home} />
       {/* Resultados de búsqueda dentro del stack de Home para conservar la tab bar */}
       <HomeStackNav.Screen name="TripFindResult" component={TripFindResult} />
+      <HomeStackNav.Screen name="BookTrip" component={BookTrip} />
     </HomeStackNav.Navigator>
   );
 }

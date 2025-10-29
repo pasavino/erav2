@@ -32,7 +32,7 @@ export type AppModalProps = {
 };
 
 const VARIANT_COLOR: Record<NonNullable<AppModalProps['variant']>, string> = {
-  info: '#2563EB',
+  info: '#25eb2cff',
   warning: '#F59E0B',
   error: '#D32F2F',
 };
