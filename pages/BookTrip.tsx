@@ -21,6 +21,8 @@ export type TripPrefs = {
   RoofRack?: string;
   Cupos?: number;
   Descripcion?: string;
+  // NUEVO: máximo de bultos permitidos por el backend
+  CupoBaggs?: number;
 };
 
 // Helper: formato Naira
@@ -88,8 +90,15 @@ export default function BookTrip() {
     return Number.isFinite(s) && s > 0 ? s : 4;
   }, [trip, prefs]);
 
+  // NUEVO: máximo de bultos (equipaje)
+  const maxBags = useMemo(() => {
+    const m = Number(prefs?.CupoBaggs);
+    return Number.isFinite(m) && m > 0 ? m : 0;
+  }, [prefs]);
+
   // Estado de reserva + modal
-  const [count, setCount] = useState<number>(Math.min(1, maxPassengers));
+  const [count, setCount] = useState<number>(1);
+  const [bagsCount, setBagsCount] = useState<number>(0); // NUEVO
   const [sending, setSending] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertVariant, setAlertVariant] = useState<'success' | 'error' | 'warning'>('warning');
@@ -99,8 +108,21 @@ export default function BookTrip() {
     setCount((c) => Math.min(Math.max(1, c), maxPassengers));
   }, [maxPassengers]);
 
+  // NUEVO: ajustar bolsas si cambia maxBags
+  useEffect(() => {
+    setBagsCount((b) => {
+      const clamped = Math.min(Math.max(0, b), maxBags);
+      // si aún no hay max conocido, deja 0
+      return maxBags > 0 ? clamped : 0;
+    });
+  }, [maxBags]);
+
   const dec = () => setCount((c) => Math.max(1, c - 1));
   const inc = () => setCount((c) => Math.min(maxPassengers, c + 1));
+
+  // NUEVO: handlers bags
+  const decBags = () => setBagsCount((b) => Math.max(0, b - 1));
+  const incBags = () => setBagsCount((b) => Math.min(maxBags, b + 1));
 
   const onBook = async () => {
     if (loadingPrefs || sending) return;
@@ -167,12 +189,16 @@ export default function BookTrip() {
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Music</Text><Text style={styles.prefsValue}>{yn(prefs.Music)}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Food</Text><Text style={styles.prefsValue}>{yn(prefs.Food)}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Smoking</Text><Text style={styles.prefsValue}>{yn(prefs.Smoking)}</Text></View>
-              <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Bags</Text><Text style={styles.prefsValue}>{prefs.Bags ?? '—'}</Text></View>
+              <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Bags included</Text><Text style={styles.prefsValue}>{prefs.Bags ?? '—'}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Price per baggage</Text><Text style={styles.prefsValue}>{prefs.Valijas_precio != null ? naira(prefs.Valijas_precio) : '—'}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Children</Text><Text style={styles.prefsValue}>{yn(prefs.Childrens)}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>AC</Text><Text style={styles.prefsValue}>{yn(prefs.AC)}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Roof rack</Text><Text style={styles.prefsValue}>{yn(prefs.RoofRack)}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Seats (max)</Text><Text style={styles.prefsValue}>{String(maxPassengers)}</Text></View>
+              {/* NUEVO: mostrar máximo de equipaje si viene */}
+              {Number.isFinite(Number(prefs.CupoBaggs)) && Number(prefs.CupoBaggs) > 0 && (
+                <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Baggage (max)</Text><Text style={styles.prefsValue}>{String(prefs.CupoBaggs)}</Text></View>
+              )}
             </View>
           )}
 
@@ -181,7 +207,7 @@ export default function BookTrip() {
           )}
         </View>
 
-        {/* Stepper */}
+        {/* Stepper Pasajeros */}
         <View style={styles.stepperWrap}>
           <Text style={styles.stepperLabel}>Passengers</Text>
           <View style={styles.stepper}>
@@ -193,8 +219,33 @@ export default function BookTrip() {
               <Text style={styles.stepBtnText}>+</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.stepperNote}>Max: {maxPassengers}</Text>
+          <Text style={styles.stepperNote}>Avail: {maxPassengers}</Text>
         </View>
+
+        {/* NUEVO: Stepper Equipaje (solo si hay CupoBaggs > 0) */}
+        {maxBags > 0 && (
+          <View style={[styles.stepperWrap, { marginTop: -20 }]}>
+            <Text style={styles.stepperLabel}>Baggage</Text>
+            <View style={styles.stepper}>
+              <TouchableOpacity
+                onPress={decBags}
+                disabled={bagsCount <= 0}
+                style={[styles.stepBtn, bagsCount <= 0 && styles.stepBtnDisabled, { marginRight: 12 }]}
+              >
+                <Text style={styles.stepBtnText}>−</Text>
+              </TouchableOpacity>
+              <Text style={[styles.stepValue, { marginHorizontal: 12 }]}>{String(bagsCount)}</Text>
+              <TouchableOpacity
+                onPress={incBags}
+                disabled={bagsCount >= maxBags}
+                style={[styles.stepBtn, bagsCount >= maxBags && styles.stepBtnDisabled, { marginLeft: 12 }]}
+              >
+                <Text style={styles.stepBtnText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.stepperNote}>Avail: {maxBags}</Text>
+          </View>
+        )}
 
         {/* Botón Book */}
         <View style={{ marginTop: 16 }}>

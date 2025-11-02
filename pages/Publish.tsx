@@ -13,6 +13,7 @@ import {
   Platform,
 } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 
@@ -97,10 +98,10 @@ function PublishedListTab() {
   const [refreshing, setRefreshing] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [hasVehicles, setHasVehicles] = useState<boolean | null>(null);
 
   const fetchTrips = useCallback(async () => {
     try {
-      setLoading(true);
       const out: ListTripsResponse | any = await requestForm('/ax_list_trips.php', {});
       const isError = typeof out?.error !== 'undefined' ? Number(out.error) !== 0 : false;
 
@@ -119,20 +120,48 @@ function PublishedListTab() {
     } catch (e: any) {
       setItems([]);
       setAlertMsg(e?.message || 'Unexpected error');
-    } finally {
-      setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchTrips();
+  const parseHasVehicles = (out: any) => {
+    if (Array.isArray(out?.data)) return Number(out.data[0]?.hasVehicles ?? out.data[0]?.has ?? NaN);
+    if (out && typeof out === 'object') return Number(out.hasVehicles ?? out.has ?? out.result ?? NaN);
+    return Number(out);
+  };
+
+  const checkVehicles = useCallback(async () => {
+    try {
+      setLoading(true);
+      const out: any = await requestForm('/ax_check_vehicle.php', {});
+      const val = parseHasVehicles(out);
+      const ok = val === 1;
+      setHasVehicles(ok);
+      if (ok) {
+        await fetchTrips();
+      } else {
+        setItems([]);
+      }
+    } catch (e: any) {
+      setHasVehicles(false);
+      setItems([]);
+      setAlertMsg(e?.message || 'Unexpected error');
+    } finally {
+      setLoading(false);
+    }
   }, [fetchTrips]);
+
+  // Revalidar solo cuando la tab gana foco (evita doble carga)
+  useFocusEffect(
+    useCallback(() => {
+      checkVehicles();
+    }, [checkVehicles])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await fetchTrips();
+    await checkVehicles();
     setRefreshing(false);
-  }, [fetchTrips]);
+  }, [checkVehicles]);
 
   const handleConfirmDelete = useCallback(async () => {
     if (confirmId == null) return;
@@ -181,33 +210,53 @@ function PublishedListTab() {
           <Text style={styles.secondary} numberOfLines={1} ellipsizeMode="tail">
             {item.DiaHora}
           </Text>
-          <Text style={styles.dot}>·</Text>
-          <Text style={styles.secondary}>Price: {String(naira(item.Precio))}</Text>
-          <Text style={styles.dot}>·</Text>
-          <Text style={styles.secondary}>Seats:  {item.Cupos} / {item.Reservados}</Text>
         </View>
+        <Text style={styles.precio}>Price: {String(naira(item.Precio))}</Text>
+        <Text style={styles.secondary}>Seats:  {item.Cupos} / {item.Reservados}</Text>
       </View>
     );
   }, []);
 
+  // UI
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <ActivityIndicator size="large" />
+        <Text style={styles.muted}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (hasVehicles === false) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <MaterialCommunityIcons name="car-off" size={36} color="#666" />
+        <Text style={[styles.muted, { marginTop: 8, textAlign: 'center', paddingHorizontal: 24 }]}>
+          You need to add a vehicle before creating trips.
+        </Text>
+
+        {/* Botón recargar y tip de pull-to-refresh */}
+        <View style={{ marginTop: 16, alignSelf: 'stretch', paddingHorizontal: 24 }}>
+          <Boton label="Reload" onPress={checkVehicles} />
+          <Text style={[styles.muted, { marginTop: 8, textAlign: 'center' }]}>
+            Tip: pull down to refresh this page.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" />
-          <Text style={styles.muted}>Loading trips…</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={items}
-          keyExtractor={(it) => String(it.IdRegistro)}
-          renderItem={renderItem}
-          contentContainerStyle={items.length === 0 ? styles.listEmpty : undefined}
-          ListEmptyComponent={<Text style={styles.muted}>No trips published.</Text>}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <FlatList
+        data={items}
+        keyExtractor={(it) => String(it.IdRegistro)}
+        renderItem={renderItem}
+        contentContainerStyle={items.length === 0 ? styles.listEmpty : undefined}
+        ListEmptyComponent={<Text style={styles.muted}>No trips published.</Text>}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
+      />
 
       {/* Confirm delete */}
       {confirmId !== null && (
@@ -268,6 +317,7 @@ function CreateTripTab() {
   const [sending, setSending] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [okModal, setOkModal] = useState<{ visible: boolean; msg: string }>({ visible: false, msg: '' });
+  const [hasVehicles, setHasVehicles] = useState<boolean | null>(null);
 
   // pickers & modals
   const [datePickerOpen, setDatePickerOpen] = useState(false); // iOS sheet
@@ -285,8 +335,17 @@ function CreateTripTab() {
     d.setHours(0, 0, 0, 0);
     return d;
   }, []);
-  const formatDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  const formatTime = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+  // 24h para backend
+  const formatTime24 = (d: Date) =>
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+  // 12h para UI (AM/PM)
+  const formatTime12 = (d: Date) =>
+    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+  const formatDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
   const cityOptions = useMemo(() => cities.map((c) => ({ label: c.name, value: String(c.id) })), [cities]);
 
@@ -306,9 +365,32 @@ function CreateTripTab() {
     }
   }, []);
 
+  const parseHasVehicles = (out: any) => {
+    if (Array.isArray(out?.data)) return Number(out.data[0]?.hasVehicles ?? out.data[0]?.has ?? NaN);
+    if (out && typeof out === 'object') return Number(out.hasVehicles ?? out.has ?? out.result ?? NaN);
+    return Number(out);
+  };
+
+  const checkVehicles = useCallback(async () => {
+    try {
+      const out: any = await requestForm('/ax_check_vehicle.php', {});
+      const val = parseHasVehicles(out);
+      setHasVehicles(val === 1);
+    } catch {
+      setHasVehicles(false);
+    }
+  }, []);
+
+  // ciudades se cargan al montar; vehículos se revalidan al enfocar
   useEffect(() => {
     loadCities();
   }, [loadCities]);
+
+  useFocusEffect(
+    useCallback(() => {
+      checkVehicles();
+    }, [checkVehicles])
+  );
 
   const clearErr = useCallback((k: string) => {
     setFieldErrors((prev) => {
@@ -367,7 +449,9 @@ function CreateTripTab() {
         value: time || new Date(),
         onChange: (_, d) => { if (d) setTime(d); },
         mode: 'time',
-        is24Hour: true,
+        // AM/PM en Android
+        is24Hour: false,
+        display: 'spinner',
       });
     } else {
       setTempTime(time || new Date());
@@ -377,6 +461,10 @@ function CreateTripTab() {
 
   const handleSave = useCallback(async () => {
     if (sending) return;
+    if (hasVehicles === false) {
+      setAppModal({ visible: true, title: 'Info', message: 'You need to add a vehicle before creating trips.' });
+      return;
+    }
 
     if (fromCity && toCity && fromCity.id === toCity.id) {
       setAppModal({ visible: true, title: 'Error', message: 'Origin and destination cannot be the same.' });
@@ -390,7 +478,8 @@ function CreateTripTab() {
         IdFromCiudad: fromCity!.id,
         IdToCiudad: toCity!.id,
         Fecha: formatDate(date!),
-        Hora: formatTime(time!),
+        // Backend en 24h para no romper
+        Hora: formatTime24(time!),
         Descripcion: description.trim(),
         Precio: parseFloat(String(priceText).replace(',', '.')),
         Cupos: seats,
@@ -419,10 +508,23 @@ function CreateTripTab() {
     } finally {
       setSending(false);
     }
-  }, [validate, fromCity, toCity, date, time, description, priceText, seats, sending]);
+  }, [validate, fromCity, toCity, date, time, description, priceText, seats, sending, hasVehicles]);
 
   const selectedDateLabel = date ? formatDate(date) : 'Select date';
-  const selectedTimeLabel = time ? formatTime(time) : 'Select time';
+  // Mostrar siempre 12h en la UI
+  const selectedTimeLabel = time ? formatTime12(time) : 'Select time';
+
+  // Si no tiene vehículos, mostrar aviso y bloquear el formulario
+  if (hasVehicles === false) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <MaterialCommunityIcons name="car-off" size={36} color="#666" />
+        <Text style={[styles.muted, { marginTop: 8, textAlign: 'center', paddingHorizontal: 20 }]}>
+          You need to add a vehicle before creating trips.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={{ padding: 12 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
@@ -484,6 +586,7 @@ function CreateTripTab() {
         value={description}
         onChangeText={(t: string) => { setDescription(t); clearErr('description'); }}
         placeholder="Trip description"
+        maxlenght={100}
       />
       {fieldErrors.description ? <FieldErrorBubble text={fieldErrors.description} /> : null}
 
@@ -494,7 +597,7 @@ function CreateTripTab() {
         onChangeText={(t: string) => { setPriceText(t); clearErr('price'); }}
         placeholder="0"
         keyboardType="numeric"
-        maxlenght={10}  // <-- como lo usás en tu Input
+        maxlenght={10}
       />
       {fieldErrors.price ? <FieldErrorBubble text={fieldErrors.price} /> : null}
 
@@ -519,7 +622,7 @@ function CreateTripTab() {
       </View>
       {fieldErrors.seats ? <FieldErrorBubble text={fieldErrors.seats} /> : null}
 
-      {/* Save (mismo botón y colores) */}
+      {/* Save */}
       <View
         style={[styles.btnWrap, { marginTop: 20, marginBottom: 40 }]}
         pointerEvents={sending ? 'none' : 'auto'}
@@ -534,7 +637,7 @@ function CreateTripTab() {
         {sending && <View style={styles.btnBlocker} pointerEvents="auto" />}
       </View>
 
-      {/* iOS: Sheet de fecha */}
+      {/* iOS: Date sheet */}
       {Platform.OS === 'ios' && datePickerOpen && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setDatePickerOpen(false)}>
           <View style={styles.modalOverlay}>
@@ -563,7 +666,7 @@ function CreateTripTab() {
         </Modal>
       )}
 
-      {/* iOS: Sheet de hora */}
+      {/* iOS: Time sheet */}
       {Platform.OS === 'ios' && timePickerOpen && (
         <Modal visible transparent animationType="fade" onRequestClose={() => setTimePickerOpen(false)}>
           <View style={styles.modalOverlay}>
@@ -668,6 +771,7 @@ const styles = StyleSheet.create({
   deleteBtn: { marginLeft: 12, padding: 2 },
   primary: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
   secondary: { fontSize: 13, color: '#333' },
+  precio: { fontSize: 15, color: '#333', fontWeight: '700' },
   dot: { marginHorizontal: 6, color: '#999' },
 
   inputLike: {
