@@ -84,7 +84,9 @@ const errDate = useMemo(() => {
     date: r.date,
     time: r.time,     // puede no venir, el componente lo maneja
     price: r.price,
-    driver_avatar:r.driver_avatar
+    driver_avatar:r.driver_avatar,
+    iconoStatus:r.icono,
+    seats:r.libres
   }));
 
   const onSearch = async () => {

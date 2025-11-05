@@ -2,6 +2,7 @@
 import React, { useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const naira = (v: any) => {
   const n = Number(v);
@@ -42,13 +43,14 @@ export default function TripFindResult() {
   const renderItem = ({ item }: { item: any; index: number }) => {
     const title = `${item?.from ?? fromCity} → ${item?.to ?? toCity}`;
     const price = item?.price ?? item?.amount ?? item?.fare;
-    const seats = item?.seats ?? item?.available_seats ?? item?.slots;
+    const seats = item.seats;    
     const date = item?.date ?? item?.when ?? '';
     const time = item?.time ?? item?.hour ?? '';
 
     const rawAvatar = (typeof item?.driver_avatar === 'string') ? item.driver_avatar : '';
     const avatarUri = rawAvatar.trim();
     const hasAvatar = avatarUri.length > 0;
+    const iconName = item.iconoStatus; 
     
     return (
       <TouchableOpacity
@@ -75,7 +77,9 @@ export default function TripFindResult() {
                 {date}{time ? ` • ${time}` : ''}
               </Text>
               <View style={styles.metaRow}>
-                {price != null && <Text style={styles.price}>{naira(price)}</Text>}
+                {price != null && <Text style={styles.price}>{naira(price)}</Text>}                
+              </View>
+              <View>
                 {seats != null && (
                   <Text style={styles.seats}>
                     {String(seats)} seat{Number(seats) === 1 ? '' : 's'} left
@@ -85,14 +89,20 @@ export default function TripFindResult() {
             </View>
           </View>
 
-          {/* RIGHT: Book button */}
-          <TouchableOpacity
-            onPress={() => navigation.navigate('BookTrip', { trip: item })}
-            activeOpacity={0.85}
-            style={styles.bookBtn}
-          >
-            <Text style={styles.bookBtnText}>Book trip</Text>
-          </TouchableOpacity>
+          {/* RIGHT: Book button OR icon */}          
+          {iconName ? (
+            <Text>
+              <MaterialCommunityIcons name={iconName as any} size={24} color="#f70808ff" />
+            </Text>
+          ) : (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('BookTrip', { trip: item })}
+              activeOpacity={0.85}
+              style={styles.bookBtn}
+            >
+              <Text style={styles.bookBtnText}>Book trip</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </TouchableOpacity>
     );
@@ -120,6 +130,7 @@ export default function TripFindResult() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: { fontSize: 16, fontWeight: '600', paddingHorizontal: 16, paddingTop: 12 },
+  fullIcon: { width: 28, height: 28, marginLeft: 8 },
   card: {
     backgroundColor: '#fafafa',
     borderRadius: 12,
@@ -135,7 +146,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 12, color: '#666' },
   metaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 12 },
   price: { fontSize: 14, fontWeight: '700' },
-  seats: { fontSize: 12, color: '#444' },
+  seats: { fontSize: 13, color: '#444' },
   bookBtn: {
     paddingHorizontal: 12,
     paddingVertical: 8,

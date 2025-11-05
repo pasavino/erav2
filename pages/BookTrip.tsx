@@ -1,7 +1,7 @@
 // /pages/BookTrip.tsx
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 
 import Boton from '../components/boton2';
 import AppModal from '../components/appModal';
@@ -41,6 +41,7 @@ const yn = (v: any) => {
 export default function BookTrip() {
   const route = useRoute<any>();
   const trip = route.params?.trip || {};
+  const navigation = useNavigation<any>();
 
   // Preferencias iniciales desde params
   const [prefs, setPrefs] = useState<TripPrefs | null>(
@@ -86,8 +87,8 @@ export default function BookTrip() {
   const maxPassengers = useMemo(() => {
     const cupos = Number(prefs?.Cupos);
     if (Number.isFinite(cupos) && cupos > 0) return cupos;
-    const s = Number(trip?.seats ?? trip?.available_seats ?? trip?.slots ?? 4);
-    return Number.isFinite(s) && s > 0 ? s : 4;
+    const s = Number(trip?.seats ?? trip?.available_seats ?? trip?.slots ?? 0);
+    return Number.isFinite(s) && s > 0 ? s : 0;
   }, [trip, prefs]);
 
   // NUEVO: máximo de bultos (equipaje)
@@ -126,16 +127,46 @@ export default function BookTrip() {
 
   const onBook = async () => {
     if (loadingPrefs || sending) return;
+
+    // Resolvemos el id del registro del viaje
+    const idregistro = route.params?.idregistro ?? trip?.idregistro ?? trip?.id ?? route.params?.id;
+    if (!idregistro) {
+      setAlertMsg('Missing trip id');
+      setAlertVariant('error');
+      return;
+    }
+
+    const Cant = Number(count);
+    const CantValijas = maxBags > 0 ? Number(bagsCount) : 0;
+
     try {
       setSending(true);
-      await new Promise((r) => setTimeout(r, 800)); // mock
+      // Llamada real al backend
+      const res: any = await requestForm('/ax_BookTrip.php', {
+        idregistro,
+        Cant,
+        CantValijas,
+      });
 
-      // ÉXITO → check verde
-      setAlertMsg('Trip booked successfully');
-      setAlertVariant('success');
+      const ok = res?.error === 0 || res?.ok === 1 || res?.success === 1 || res === 1;
+      if (ok) {
+        // Navegar a Profile -> MyTrips (ajusta a tu navigator real)
+        // Opción A: tab/screen directa
+        try {
+          navigation.navigate('Profile', { screen: 'MyTrips', params: { justBooked: true } });
+        } catch {
+          // Opción B: si no existe MyTrips aún, al menos abrir Profile con una señal
+          navigation.navigate('Profile', { openMyTrips: true, justBooked: true });
+        }
+        return;
+      }
+
+      // Si vino error, mostrar mensaje del backend
+      const msg = String(res?.msg || 'Booking failed');
+      setAlertMsg(msg);
+      setAlertVariant('error');
     } catch (_e: any) {
-      // ERROR → ícono rojo
-      setAlertMsg('Booking failed');
+      setAlertMsg('Network error while booking');
       setAlertVariant('error');
     } finally {
       setSending(false);
@@ -189,7 +220,7 @@ export default function BookTrip() {
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Music</Text><Text style={styles.prefsValue}>{yn(prefs.Music)}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Food</Text><Text style={styles.prefsValue}>{yn(prefs.Food)}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Smoking</Text><Text style={styles.prefsValue}>{yn(prefs.Smoking)}</Text></View>
-              <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Bags included</Text><Text style={styles.prefsValue}>{prefs.Bags ?? '—'}</Text></View>
+              <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Bags</Text><Text style={styles.prefsValue}>{prefs.Bags ?? '—'}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Price per baggage</Text><Text style={styles.prefsValue}>{prefs.Valijas_precio != null ? naira(prefs.Valijas_precio) : '—'}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>Children</Text><Text style={styles.prefsValue}>{yn(prefs.Childrens)}</Text></View>
               <View style={styles.prefsItem}><Text style={styles.prefsLabel}>AC</Text><Text style={styles.prefsValue}>{yn(prefs.AC)}</Text></View>
@@ -224,7 +255,7 @@ export default function BookTrip() {
 
         {/* NUEVO: Stepper Equipaje (solo si hay CupoBaggs > 0) */}
         {maxBags > 0 && (
-          <View style={[styles.stepperWrap, { marginTop: -20 }]}>
+          <View style={[styles.stepperWrap, { marginTop: -20 }]}> 
             <Text style={styles.stepperLabel}>Baggage</Text>
             <View style={styles.stepper}>
               <TouchableOpacity
@@ -249,8 +280,8 @@ export default function BookTrip() {
 
         {/* Botón Book */}
         <View style={{ marginTop: 16 }}>
-          <Boton
-            disabled={actionDisabled}
+          <Boton            
+            disabled={actionDisabled || maxPassengers <= 0}
             label={loadingPrefs ? 'Loading…' : (sending ? 'Booking…' : 'Book')}
             onPress={onBook}
           />
