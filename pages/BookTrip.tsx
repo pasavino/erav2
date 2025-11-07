@@ -124,6 +124,14 @@ export default function BookTrip() {
   // NUEVO: handlers bags
   const decBags = () => setBagsCount((b) => Math.max(0, b - 1));
   const incBags = () => setBagsCount((b) => Math.min(maxBags, b + 1));
+  // Cálculo de totales
+  const tripUnit = useMemo(() => (Number.isFinite(Number(price)) ? Number(price) : 0), [price]);
+  const bagUnit = useMemo(() => (Number.isFinite(Number(prefs?.Valijas_precio)) ? Number(prefs?.Valijas_precio) : 0), [prefs]);
+  const totalAmount = useMemo(() => {
+    const base = tripUnit * count;
+    const bags = maxBags > 0 ? bagUnit * bagsCount : 0;
+    return base + bags;
+  }, [tripUnit, bagUnit, count, bagsCount, maxBags]);
 
   const onBook = async () => {
     if (loadingPrefs || sending) return;
@@ -278,6 +286,12 @@ export default function BookTrip() {
           </View>
         )}
 
+        {/* Total */}
+        <View style={styles.totalBox}>
+          <Text style={styles.totalLabel}>Total amount</Text>
+          <Text style={styles.totalValue}>{naira(totalAmount)}</Text>
+        </View>
+
         {/* Botón Book */}
         <View style={{ marginTop: 16 }}>
           <Boton            
@@ -343,4 +357,19 @@ const styles = StyleSheet.create({
   stepBtnText: { fontSize: 20, fontWeight: '700' },
   stepValue: { width: 40, textAlign: 'center', fontSize: 16, fontWeight: '700' },
   stepperNote: { marginTop: 4, fontSize: 12, color: '#666' },
+  totalBox: {
+    marginTop: -10,
+    marginBottom: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#e6e6e6',
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: { fontSize: 14, color: '#444', fontWeight: '600' },
+  totalValue: { fontSize: 18, fontWeight: '800' },
 });

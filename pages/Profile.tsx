@@ -55,10 +55,7 @@ function useProfileData() {
     (async () => {
       try {
         setAuthToken(token || '');
-        const out = await requestForm<{ data: ProfileData; msg?: string; error?: number }>(
-          '/ax_get_profile.php',
-          {}
-        );
+        const out = await requestForm<{ data: ProfileData; msg?: string; error?: number }>('/ax_get_profile.php',{});
         if (!out.error && out.data) {
           const d: ProfileData = {
             ...out.data,
@@ -448,6 +445,7 @@ function AccountTab() {
       <NavItem title="My vehicles" to="Car" />
       <NavItem title="Trip preferences" to="TripPreferences" />
       <NavItem title="My wallet" to="MyWallet" />
+      <NavItem title="Travel history" to="TravelHistory" />
       <NavItem title="Notifications" to="Notifications" />
       <NavItem title="Privacy & Terms" to="PrivacyTerms" />
       <NavItem title="About" to="About" />

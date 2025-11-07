@@ -13,6 +13,7 @@ import TripFindResult from './TripFindResult';
 import AddVehicle from './AddVehicle';
 import TripPreferences from './TripPreferences';
 import BookTrip from './BookTrip';
+import TravelHistory from './TravelHistory';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
@@ -27,6 +28,7 @@ function HomeStack() {
       {/* Resultados de búsqueda dentro del stack de Home para conservar la tab bar */}
       <HomeStackNav.Screen name="TripFindResult" component={TripFindResult} />
       <HomeStackNav.Screen name="BookTrip" component={BookTrip} />
+      <HomeStackNav.Screen name="TravelHistory" component={TravelHistory} />
     </HomeStackNav.Navigator>
   );
 }
@@ -55,6 +57,11 @@ function ProfileStack() {
         component={TripPreferences}
         options={{ title: 'Trip preferences' }}
       />
+      <ProfileStackNav.Screen
+    name="TravelHistory"             
+    component={TravelHistory}
+    options={{ headerTitle: 'Travel history' }}
+  />
     </ProfileStackNav.Navigator>
   );
 }
@@ -84,7 +91,7 @@ export default function MainTabs() {
       <Tab.Screen name="Home" component={HomeStack} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="Publish ride" component={Publish} options={{ tabBarLabel: 'Publish ride' }} />
       <Tab.Screen name="Car" component={CarStack} options={{ tabBarLabel: 'My Car' }} />
-      <Tab.Screen name="Profile" component={ProfileStack} options={{ tabBarLabel: 'Profile' }} />
+      <Tab.Screen name="Profile" component={ProfileStack} options={{ tabBarLabel: 'Profile' }} />      
     </Tab.Navigator>
   );
 }
