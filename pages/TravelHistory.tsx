@@ -32,7 +32,7 @@ type TripRow = {
 
 type ApiResp = { data: TripRow[] };
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 5;
 
 const naira = (v: any) => {
   const n = Number(v);
@@ -107,21 +107,28 @@ export default function HistoryTrip() {
   };
 
   const confirmDelete = async () => {
-    if (!confirmItem || deleting) return;
-    try {
-      setDeleting(true);
-      await ensureOk(
-        requestForm('/ax_deleteHistoryTrip.php', { IdRegistro: String(confirmItem.IdRegistro) })
-      );
-      setItems(prev => prev.filter(r => r.IdRegistro !== confirmItem.IdRegistro));
-      setConfirmItem(null);
-    } catch (e: any) {
-      setConfirmItem(null);
-      setErrorMsg(e?.message || 'Delete failed');
-    } finally {
-      setDeleting(false);
+  if (!confirmItem || deleting) return;
+  setDeleting(true);
+  try {
+    const res = await requestForm('/ax_deleteHistoryTrip.php', {
+      IdRegistro: String(confirmItem.IdRegistro),
+    });
+
+    if (!res || res.error !== 0) {
+      setErrorMsg(res?.msg || 'Delete failed');
+      return;
     }
-  };
+
+    // éxito: quitar de la lista
+    setItems(prev => prev.filter(r => r.IdRegistro !== confirmItem.IdRegistro));
+  } catch (e: any) {
+    setErrorMsg(e?.message || 'Delete failed');
+  } finally {
+    setConfirmItem(null);
+    setDeleting(false);
+  }
+};
+
 
   if (loading) {
     return (
@@ -138,6 +145,8 @@ export default function HistoryTrip() {
       <FlatList
         data={items}
         keyExtractor={(it) => String(it.IdRegistro)}
+        showsVerticalScrollIndicator={false}
+        overScrollMode="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
@@ -188,7 +197,7 @@ export default function HistoryTrip() {
             <Ionicons name="alert-circle" size={36} color="#D32F2F" style={styles.modalIcon} />
             <Text style={styles.modalTitle}>Delete trip?</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to delete this record from your history?
+              If the trip is still reserved, the driver will be notified of your cancellation.
             </Text>
 
             <View style={styles.modalActions}>
