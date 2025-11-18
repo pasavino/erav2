@@ -2,7 +2,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-
+import { CommonActions } from '@react-navigation/native';
 import Boton from '../components/boton2';
 import AppModal from '../components/appModal';
 import { requestForm } from '../services/http';
@@ -161,14 +161,15 @@ export default function BookTrip() {
         // Navegar a Profile -> MyTrips (ajusta a tu navigator real)
         // Opción A: tab/screen directa
         try {
-          navigation.navigate('Profile', { screen: 'MyTrips', params: { justBooked: true } });
-        } catch {
-          // Opción B: si no existe MyTrips aún, al menos abrir Profile con una señal
-          navigation.navigate('Profile', { openMyTrips: true, justBooked: true });
+          setAlertMsg('Trip booked');
+          setAlertVariant('success');   
+          setTimeout(() => {navigation.dispatch(CommonActions.reset({ index:0, routes:[{ name:'Home' }] }));}, 3000);
+        } catch {          
+          navigation.dispatch(CommonActions.reset({index:0,routes:[{name:'Home'}],}));
         }
         return;
       }
-
+      
       // Si vino error, mostrar mensaje del backend
       const msg = String(res?.msg || 'Booking failed');
       setAlertMsg(msg);

@@ -14,6 +14,7 @@ import AddVehicle from './AddVehicle';
 import TripPreferences from './TripPreferences';
 import BookTrip from './BookTrip';
 import TravelHistory from './TravelHistory';
+import Notifications from './Notifications';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
@@ -29,6 +30,7 @@ function HomeStack() {
       <HomeStackNav.Screen name="TripFindResult" component={TripFindResult} />
       <HomeStackNav.Screen name="BookTrip" component={BookTrip} />
       <HomeStackNav.Screen name="TravelHistory" component={TravelHistory} />
+      <HomeStackNav.Screen name="Notifications" component={Notifications} />
     </HomeStackNav.Navigator>
   );
 }
@@ -58,10 +60,15 @@ function ProfileStack() {
         options={{ title: 'Trip preferences' }}
       />
       <ProfileStackNav.Screen
-    name="TravelHistory"             
-    component={TravelHistory}
-    options={{ headerTitle: 'Travel history' }}
-  />
+        name="TravelHistory"             
+        component={TravelHistory}
+        options={{ headerTitle: 'Travel history' }}
+      />
+      <ProfileStackNav.Screen
+        name="Notifications"             
+        component={Notifications}
+        options={{ headerTitle: 'Notifications' }}
+      />
     </ProfileStackNav.Navigator>
   );
 }

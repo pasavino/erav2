@@ -28,6 +28,7 @@ type TripRow = {
   FechaViaje: string; // YYYY-MM-DD
   HoraViaje: string;  // "09:00 AM"
   icono: string;      // ej: "calendar-check"
+  Estado: number;     // ej: Estado para saber que texto poner en la confirmacion de borrado
 };
 
 type ApiResp = { data: TripRow[] };
@@ -107,28 +108,27 @@ export default function HistoryTrip() {
   };
 
   const confirmDelete = async () => {
-  if (!confirmItem || deleting) return;
-  setDeleting(true);
-  try {
-    const res = await requestForm('/ax_deleteHistoryTrip.php', {
-      IdRegistro: String(confirmItem.IdRegistro),
-    });
+    if (!confirmItem || deleting) return;
+    setDeleting(true);
+    try {
+      const res = await requestForm('/ax_deleteHistoryTrip.php', {
+        IdRegistro: String(confirmItem.IdRegistro),
+      });
 
-    if (!res || res.error !== 0) {
-      setErrorMsg(res?.msg || 'Delete failed');
-      return;
+      if (!res || res.error !== 0) {
+        setErrorMsg(res?.msg || 'Delete failed');
+        return;
+      }
+
+      // éxito: quitar de la lista
+      setItems(prev => prev.filter(r => r.IdRegistro !== confirmItem.IdRegistro));
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Delete failed');
+    } finally {
+      setConfirmItem(null);
+      setDeleting(false);
     }
-
-    // éxito: quitar de la lista
-    setItems(prev => prev.filter(r => r.IdRegistro !== confirmItem.IdRegistro));
-  } catch (e: any) {
-    setErrorMsg(e?.message || 'Delete failed');
-  } finally {
-    setConfirmItem(null);
-    setDeleting(false);
-  }
-};
-
+  };
 
   if (loading) {
     return (
@@ -141,7 +141,6 @@ export default function HistoryTrip() {
 
   return (
     <View style={styles.container}>
-      
       <FlatList
         data={items}
         keyExtractor={(it) => String(it.IdRegistro)}
@@ -162,8 +161,12 @@ export default function HistoryTrip() {
         renderItem={({ item }) => (
           <View style={styles.row}>
             {/* Icono a la izquierda (según JSON) */}
-            <MaterialCommunityIcons name={item.icono as any} size={22} color="#111827" style={{ marginRight: 8 }} />
-
+            <MaterialCommunityIcons
+              name={item.icono as any}
+              size={22}
+              color={item.Estado === 1 ? '#16a34a' : '#111827'}
+              style={{ marginRight: 8 }}
+            />
             {/* Contenido en múltiples renglones */}
             <View style={{ flex: 1 }}>
               <Text style={styles.name} numberOfLines={1}>{item.FromTo}</Text>
@@ -196,9 +199,17 @@ export default function HistoryTrip() {
           <View style={styles.modalCardPretty}>
             <Ionicons name="alert-circle" size={36} color="#D32F2F" style={styles.modalIcon} />
             <Text style={styles.modalTitle}>Delete trip?</Text>
-            <Text style={styles.modalMessage}>
-              If the trip is still reserved, the driver will be notified of your cancellation.
-            </Text>
+
+            {confirmItem && confirmItem.Estado >= 2 ? (
+              <Text style={styles.modalMessage}>
+                Are you sure you want to delete the trip?
+              </Text>
+            ) : (
+              <Text style={styles.modalMessage}>
+                If the trip is still reserved, the driver will be notified of your cancellation.{'\n'}
+                <Text style={styles.bold}>No refunds for cancellations within 24 hours.</Text>
+              </Text>
+            )}
 
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -257,7 +268,7 @@ const styles = StyleSheet.create({
   // MISMA estructura que Car.tsx
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-
+  bold: { fontWeight: '700'},
   header: {
     flexDirection: 'row',
     alignItems: 'center',
