@@ -207,8 +207,8 @@ export default function HistoryTrip() {
               </Text>
             ) : (
               <Text style={styles.modalMessage}>
-                If the trip is still reserved, the driver will be notified of your cancellation.{'\n'}
-                <Text style={styles.bold}>No refunds for cancellations within 24 hours.</Text>
+                If the trip has reservations, the passenger will be notified of your cancellation.{'\n'}
+                <Text style={styles.bold}>You will have a bad reputation.</Text>
               </Text>
             )}
 

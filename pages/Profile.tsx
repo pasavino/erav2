@@ -446,6 +446,7 @@ function AccountTab() {
       <NavItem title="Trip preferences" to="TripPreferences" />
       <NavItem title="My wallet" to="MyWallet" />
       <NavItem title="Travel history" to="TravelHistory" />
+      <NavItem title="Travel history driver" to="TravelHistoryDriver" />
       <NavItem title="Notifications" to="Notifications" />
       <NavItem title="Privacy & Terms" to="PrivacyTerms" />
       <NavItem title="About" to="About" />

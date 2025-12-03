@@ -15,6 +15,7 @@ import TripPreferences from './TripPreferences';
 import BookTrip from './BookTrip';
 import TravelHistory from './TravelHistory';
 import Notifications from './Notifications';
+import TravelHistoryDriver from './TravelHistoryDriver';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
@@ -30,6 +31,7 @@ function HomeStack() {
       <HomeStackNav.Screen name="TripFindResult" component={TripFindResult} />
       <HomeStackNav.Screen name="BookTrip" component={BookTrip} />
       <HomeStackNav.Screen name="TravelHistory" component={TravelHistory} />
+      <HomeStackNav.Screen name="TravelHistoryDriver" component={TravelHistoryDriver} />
       <HomeStackNav.Screen name="Notifications" component={Notifications} />
     </HomeStackNav.Navigator>
   );
@@ -64,6 +66,13 @@ function ProfileStack() {
         component={TravelHistory}
         options={{ headerTitle: 'Travel history' }}
       />
+
+      <ProfileStackNav.Screen
+        name="TravelHistoryDriver"             
+        component={TravelHistoryDriver}
+        options={{ headerTitle: 'Travel history driver' }}
+      />
+
       <ProfileStackNav.Screen
         name="Notifications"             
         component={Notifications}
