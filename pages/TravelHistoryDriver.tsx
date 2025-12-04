@@ -1,5 +1,5 @@
 // /pages/HistoryTrip.tsx
-// Historial de viajes del pasajero
+// Historial de viajes del driver
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,

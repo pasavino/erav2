@@ -99,6 +99,7 @@ function PublishedListTab() {
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const [hasVehicles, setHasVehicles] = useState<boolean | null>(null);
+  const [deleting, setDeleting] = useState(false); // evita múltiples taps en Delete
 
   const fetchTrips = useCallback(async () => {
     try {
@@ -164,8 +165,9 @@ function PublishedListTab() {
   }, [checkVehicles]);
 
   const handleConfirmDelete = useCallback(async () => {
-    if (confirmId == null) return;
+    if (confirmId == null || deleting) return;
     try {
+      setDeleting(true);
       const out: any = await requestForm('/ax_delete_trip.php', { IdRegistro: confirmId });
       const isError = typeof out?.error !== 'undefined' ? Number(out.error) !== 0 : false;
       if (isError) {
@@ -176,9 +178,10 @@ function PublishedListTab() {
     } catch (e: any) {
       setAlertMsg(e?.message || 'Unexpected error');
     } finally {
+      setDeleting(false);
       setConfirmId(null);
     }
-  }, [confirmId]);
+  }, [confirmId, deleting]);
 
   const renderItem = useCallback(({ item }: { item: TripRow }) => {
     return (
@@ -260,7 +263,14 @@ function PublishedListTab() {
 
       {/* Confirm delete */}
       {confirmId !== null && (
-        <Modal visible transparent animationType="fade" onRequestClose={() => setConfirmId(null)}>
+        <Modal
+          visible
+          transparent
+          animationType="fade"
+          onRequestClose={() => {
+            if (!deleting) setConfirmId(null);
+          }}
+        >
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <MaterialCommunityIcons name="alert-circle-outline" size={36} color="#D32F2F" style={styles.modalIcon} />
@@ -269,11 +279,33 @@ function PublishedListTab() {
                 If the trip has passengers, this will result in a bad rating for you, the passenger will be refunded.
               </Text>
               <View style={styles.modalActions}>
-                <TouchableOpacity onPress={() => setConfirmId(null)} style={[styles.modalBtn, styles.modalBtnCancel]}>
+                <TouchableOpacity
+                  onPress={() => setConfirmId(null)}
+                  style={[styles.modalBtn, styles.modalBtnCancel, deleting && styles.modalBtnDisabled]}
+                  disabled={deleting}
+                >
                   <Text style={styles.modalBtnText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleConfirmDelete} style={[styles.modalBtn, styles.modalBtnDelete]}>
-                  <Text style={[styles.modalBtnText, styles.modalBtnTextDelete]}>Delete</Text>
+                <TouchableOpacity
+                  onPress={handleConfirmDelete}
+                  style={[
+                    styles.modalBtn,
+                    styles.modalBtnDelete,
+                    styles.modalBtnRow,
+                    deleting && styles.modalBtnDisabled,
+                  ]}
+                  disabled={deleting}
+                >
+                  {deleting && (
+                    <ActivityIndicator
+                      size="small"
+                      color="#D32F2F"
+                      style={{ marginRight: 8 }}
+                    />
+                  )}
+                  <Text style={[styles.modalBtnText, styles.modalBtnTextDelete]}>
+                    {deleting ? 'Deleting…' : 'Delete'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -527,7 +559,12 @@ function CreateTripTab() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 12 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+    <ScrollView
+      contentContainerStyle={{ padding: 12 }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      showsHorizontalScrollIndicator={false}
+    >
       {/* From */}
       <View style={styles.field}>
         <Combo
@@ -883,6 +920,15 @@ const styles = StyleSheet.create({
   modalBtnDelete: { borderColor: '#D32F2F', backgroundColor: '#FDECEA' },
   modalBtnText: { fontWeight: '600', color: '#333' },
   modalBtnTextDelete: { color: '#D32F2F', fontWeight: '700' },
+
+  modalBtnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBtnDisabled: {
+    opacity: 0.6,
+  },
 
   cityRow: {
     flexDirection: 'row',
