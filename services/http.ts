@@ -91,7 +91,7 @@ export async function requestForm<T>(endpoint: string, data: Record<string, any>
       .join('&');
   }
 
-  console.log(`[HTTP] POST ${endpoint} ${token ? 'token OK' : 'SIN TOKEN'}${hasFile ? ' [multipart]' : ''}`);
+  //console.log(`[HTTP] POST ${endpoint} ${token ? 'token OK' : 'SIN TOKEN'}${hasFile ? ' [multipart]' : ''}`);
 
   const res = await fetch(url, { method: 'POST', headers, body });
   const text = await res.text();
