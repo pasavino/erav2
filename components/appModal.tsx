@@ -26,7 +26,12 @@ export type AppModalProps = {
   onClose: () => void;
   iconName?: keyof typeof Ionicons.glyphMap; // defaults by variant
   variant?: 'info' | 'warning' | 'error';
-  actions?: ModalAction[]; // default: single OK closes
+  /**
+   * Actions to render.
+   * - undefined: default single OK button that calls onClose
+   * - []: renders no actions
+   */
+  actions?: ModalAction[];
   // UX
   backdropClose?: boolean; // close when pressing outside (not implemented here for safety)
 };
@@ -55,9 +60,8 @@ export default function AppModal({
   const color = VARIANT_COLOR[variant];
   const ico = iconName ?? DEFAULT_ICON[variant];
 
-  const finalActions: ModalAction[] = actions && actions.length
-    ? actions
-    : [{ label: 'OK', onPress: onClose, variant: 'danger' }];
+  const finalActions: ModalAction[] =
+    actions === undefined ? [{ label: 'OK', onPress: onClose, variant: 'danger' }] : actions;
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -65,43 +69,36 @@ export default function AppModal({
         <View style={styles.card}>
           <Ionicons name={ico} size={36} color={color} style={styles.icon} />
           {title ? <Text style={styles.title}>{title}</Text> : null}
-          {typeof message === 'string' ? (
-            <Text style={styles.msg}>{message}</Text>
-          ) : (
-            message
-          )}
+          {typeof message === 'string' ? <Text style={styles.msg}>{message}</Text> : message}
 
           {/* Actions */}
-          <View style={styles.actionsRow}>
-            {finalActions.map((a, idx) => (
-              <TouchableOpacity
-                key={`${a.label}-${idx}`}
-                disabled={a.disabled || a.loading}
-                onPress={a.onPress}
-                testID={a.testID}
-                style={[
-                  styles.btn,
-                  a.variant === 'danger' && styles.btnDanger,
-                  a.variant === 'ghost' && styles.btnGhost,
-                  (a.disabled || a.loading) && styles.btnDisabled,
-                  idx > 0 && { marginLeft: 12 },
-                ]}
-              >
-                {a.loading ? (
-                  <ActivityIndicator />
-                ) : (
-                  <Text
-                    style={[
-                      styles.btnText,
-                      a.variant === 'danger' && styles.btnTextDanger,
-                    ]}
-                  >
-                    {a.label}
-                  </Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+          {finalActions.length ? (
+            <View style={styles.actionsRow}>
+              {finalActions.map((a, idx) => (
+                <TouchableOpacity
+                  key={`${a.label}-${idx}`}
+                  disabled={a.disabled || a.loading}
+                  onPress={a.onPress}
+                  testID={a.testID}
+                  style={[
+                    styles.btn,
+                    a.variant === 'danger' && styles.btnDanger,
+                    a.variant === 'ghost' && styles.btnGhost,
+                    (a.disabled || a.loading) && styles.btnDisabled,
+                    idx > 0 && { marginLeft: 12 },
+                  ]}
+                >
+                  {a.loading ? (
+                    <ActivityIndicator />
+                  ) : (
+                    <Text style={[styles.btnText, a.variant === 'danger' && styles.btnTextDanger]}>
+                      {a.label}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
         </View>
       </View>
     </Modal>

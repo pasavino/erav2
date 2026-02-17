@@ -6,7 +6,9 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "platforms": ["android"],
+    "platforms": [
+      "android"
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -54,7 +56,8 @@
           "photosPermission": "We need access to your photos to update the avatar",
           "cameraPermission": "We need camera access to take your profile photo"
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }
