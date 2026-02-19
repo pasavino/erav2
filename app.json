@@ -28,11 +28,12 @@
       "package": "com.easyrideafrica.erav2",
       "jsEngine": "hermes",
       "versionCode": 5,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon-1024-transparent.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "newArchEnabled": true,
       "permissions": [
         "CAMERA",

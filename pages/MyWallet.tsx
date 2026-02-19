@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { requestForm } from '../services/http';
 import Boton from '../components/boton';
@@ -71,7 +70,6 @@ const naira = (v: any) => {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const MyWallet: React.FC = () => {
-  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
@@ -365,12 +363,9 @@ const MyWallet: React.FC = () => {
             {/* Buttons */}
             <View
               style={[styles.buttonsContainer, disabledWhilePaystack && { opacity: 0.6 }]}
-              pointerEvents={disabledWhilePaystack ? 'none' : 'auto'}
             >
               {/* No cambiamos estilo: sólo bloqueamos el touch si no hay saldo */}
-              <View pointerEvents={canTransfer ? 'auto' : 'none'}>
-                <Boton label="Transfer to passenger wallet" onPress={handleTransferToPassengerWallet} />
-              </View>
+              <Boton label="Transfer to passenger wallet" onPress={handleTransferToPassengerWallet} />
               <View style={{ height: 12 }} />
               <Boton label="Recharge wallet credit/debit card" onPress={openRecharge} />
 
@@ -403,51 +398,42 @@ const MyWallet: React.FC = () => {
       <Modal visible={amountModalVisible} animationType="slide" transparent>
         <View style={styles.modalBackdrop}>
           <KeyboardAvoidingView
-            // Android: el teclado numérico suele tapar inputs en modales bottom-sheet si no ajustamos altura.
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            // Fix: en release (edge-to-edge) el footer del sistema puede tapar el botón "Cancel"
-            style={[styles.modalCard, { paddingBottom: 16 + insets.bottom }]}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            style={styles.modalCard}
           >
-            <ScrollView
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 0 }}
+            <Text style={styles.modalTitle}>
+              {amountMode === 'TOPUP' ? 'Recharge wallet' : 'Transfer to passenger wallet'}
+            </Text>
+            <Text style={styles.modalSub}>
+              {amountMode === 'TOPUP'
+                ? 'Enter amount in NGN'
+                : `Enter amount in NGN (max ${naira(walletDriver)})`}
+            </Text>
+
+            <Input
+              label="Amount"
+              value={amount}
+              onChangeText={(t: string) => {
+                setAmount(t);
+                if (amountErr) setAmountErr('');
+              }}
+              keyboardType="numeric"
+              placeholder="e.g. 5000"
+              error={amountErr ? amountErr : undefined}
+            />
+
+            <View style={{ height: 12 }} />
+
+            <View
+              style={[disabledWhilePaystack && { opacity: 0.6 }]}
             >
-              <Text style={styles.modalTitle}>
-                {amountMode === 'TOPUP' ? 'Recharge wallet' : 'Transfer to passenger wallet'}
-              </Text>
-              <Text style={styles.modalSub}>
-                {amountMode === 'TOPUP'
-                  ? 'Enter amount in NGN'
-                  : `Enter amount in NGN (max ${naira(walletDriver)})`}
-              </Text>
-
-              <Input
-                label="Amount"
-                value={amount}
-                onChangeText={(t: string) => {
-                  setAmount(t);
-                  if (amountErr) setAmountErr('');
-                }}
-                keyboardType="numeric"
-                placeholder="e.g. 5000"
-                error={amountErr ? amountErr : undefined}
+              <Boton
+                label={amountMode === 'TOPUP' ? 'Continue to Paystack' : 'Transfer'}
+                onPress={amountMode === 'TOPUP' ? startTopup : startTransfer}
               />
-
-              <View style={{ height: 12 }} />
-
-              <View
-                pointerEvents={disabledWhilePaystack ? 'none' : 'auto'}
-                style={disabledWhilePaystack && { opacity: 0.6 }}
-              >
-                <Boton
-                  label={amountMode === 'TOPUP' ? 'Continue to Paystack' : 'Transfer'}
-                  onPress={amountMode === 'TOPUP' ? startTopup : startTransfer}
-                />
-                <View style={{ height: 10 }} />
-                <Boton label="Cancel" onPress={() => setAmountModalVisible(false)} />
-              </View>
-            </ScrollView>
+              <View style={{ height: 10 }} />
+              <Boton label="Cancel" onPress={() => setAmountModalVisible(false)} />
+            </View>
           </KeyboardAvoidingView>
         </View>
       </Modal>
