@@ -35,6 +35,9 @@ type MyWalletResponse = {
 // ✅ Ajustá si tus endpoints se llaman distinto
 const TOPUP_INIT_ENDPOINT = 'ax_wallet_topup_init.php';
 const TOPUP_STATUS_ENDPOINT = 'ax_wallet_topup_status.php';
+const TRANSFER_ENDPOINT = 'ax_transfer_wallet.php';
+
+type AmountMode = 'TOPUP' | 'TRANSFER';
 
 type TopupInitResponse = {
   error: number;
@@ -49,6 +52,12 @@ type TopupStatusResponse = {
   msg?: string;
   message?: string;
   status?: 'INIT' | 'PENDING' | 'SUCCESS' | 'FAILED';
+};
+
+type TransferResponse = {
+  error: number;
+  msg?: string;
+  message?: string;
 };
 
 const naira = (v: any) => {
@@ -76,6 +85,7 @@ const MyWallet: React.FC = () => {
   const [amountModalVisible, setAmountModalVisible] = useState(false);
   const [amount, setAmount] = useState<string>(''); // NGN
   const [amountErr, setAmountErr] = useState<string>('');
+  const [amountMode, setAmountMode] = useState<AmountMode>('TOPUP');
 
   // Modal: WebView checkout
   const [checkoutVisible, setCheckoutVisible] = useState(false);
@@ -134,13 +144,18 @@ const MyWallet: React.FC = () => {
   };
 
   const handleTransferToPassengerWallet = () => {
-    // TODO
+    if (walletDriver <= 0 || paystackBusy) return;
+    setAmountMode('TRANSFER');
+    setAmount('');
+    setAmountErr('');
+    setAmountModalVisible(true);
   };
 
   // ----------------------------
   // RECHARGE: flujo principal
   // ----------------------------
   const openRecharge = () => {
+    setAmountMode('TOPUP');
     setAmount('');
     setAmountErr('');
     setAmountModalVisible(true);
@@ -151,7 +166,7 @@ const MyWallet: React.FC = () => {
     return isFinite(n) ? n : NaN;
   }, [amount]);
 
-  const validateAmount = () => {
+  const validateAmountTopup = () => {
     if (!amount.trim()) {
       setAmountErr('Enter an amount');
       return false;
@@ -168,8 +183,25 @@ const MyWallet: React.FC = () => {
     return true;
   };
 
+  const validateAmountTransfer = () => {
+    if (!amount.trim()) {
+      setAmountErr('Enter an amount');
+      return false;
+    }
+    if (!isFinite(parsedAmount) || parsedAmount <= 0) {
+      setAmountErr('Invalid amount');
+      return false;
+    }
+    if (parsedAmount > walletDriver) {
+      setAmountErr('Amount exceeds driver wallet');
+      return false;
+    }
+    setAmountErr('');
+    return true;
+  };
+
   const startTopup = async () => {
-    if (!validateAmount()) return;
+    if (!validateAmountTopup()) return;
 
     try {
       setPaystackBusy(true);
@@ -197,6 +229,42 @@ const MyWallet: React.FC = () => {
       setAlertMsg('Network error starting topup'); // ❌ error
     }
   };
+
+  // ----------------------------
+  // TRANSFER: driver -> traveler
+  // ----------------------------
+  const startTransfer = async () => {
+  if (!validateAmountTransfer()) return;
+
+  try {
+    setPaystackBusy(true);
+    setAmountModalVisible(false);
+
+    const resp = (await requestForm(TRANSFER_ENDPOINT, {
+      amount_naira: String(parsedAmount),
+    })) as TransferResponse;
+
+    const msg = resp?.msg || resp?.message || 'Transfer error';
+
+    if (!resp || resp.error !== 0) {
+      setSuccessMsg('');     // opcional: por si quedó éxito previo
+      setAlertMsg(msg);
+      setPaystackBusy(false);
+      return;
+    }
+
+    await loadWallet();
+
+    setAlertMsg('');         // <-- clave: limpia el error viejo
+    setSuccessMsg(msg || 'Transfer successful');
+
+    setPaystackBusy(false);
+  } catch (e) {
+    setSuccessMsg('');       // opcional
+    setPaystackBusy(false);
+    setAlertMsg('Network error transferring funds');
+  }
+};
 
   const closeCheckout = async () => {
     setCheckoutVisible(false);
@@ -248,6 +316,7 @@ const MyWallet: React.FC = () => {
   };
 
   const disabledWhilePaystack = paystackBusy;
+  const canTransfer = walletDriver > 0 && !disabledWhilePaystack;
 
   return (
     <View style={styles.container}>
@@ -296,7 +365,10 @@ const MyWallet: React.FC = () => {
               style={[styles.buttonsContainer, disabledWhilePaystack && { opacity: 0.6 }]}
               pointerEvents={disabledWhilePaystack ? 'none' : 'auto'}
             >
-              <Boton label="Transfer to passenger wallet" onPress={handleTransferToPassengerWallet} />
+              {/* No cambiamos estilo: sólo bloqueamos el touch si no hay saldo */}
+              <View pointerEvents={canTransfer ? 'auto' : 'none'}>
+                <Boton label="Transfer to passenger wallet" onPress={handleTransferToPassengerWallet} />
+              </View>
               <View style={{ height: 12 }} />
               <Boton label="Recharge wallet credit/debit card" onPress={openRecharge} />
 
@@ -332,8 +404,14 @@ const MyWallet: React.FC = () => {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
             style={styles.modalCard}
           >
-            <Text style={styles.modalTitle}>Recharge wallet</Text>
-            <Text style={styles.modalSub}>Enter amount in NGN</Text>
+            <Text style={styles.modalTitle}>
+              {amountMode === 'TOPUP' ? 'Recharge wallet' : 'Transfer to passenger wallet'}
+            </Text>
+            <Text style={styles.modalSub}>
+              {amountMode === 'TOPUP'
+                ? 'Enter amount in NGN'
+                : `Enter amount in NGN (max ${naira(walletDriver)})`}
+            </Text>
 
             <Input
               label="Amount"
@@ -353,7 +431,10 @@ const MyWallet: React.FC = () => {
               pointerEvents={disabledWhilePaystack ? 'none' : 'auto'}
               style={disabledWhilePaystack && { opacity: 0.6 }}
             >
-              <Boton label="Continue to Paystack" onPress={startTopup} />
+              <Boton
+                label={amountMode === 'TOPUP' ? 'Continue to Paystack' : 'Transfer'}
+                onPress={amountMode === 'TOPUP' ? startTopup : startTransfer}
+              />
               <View style={{ height: 10 }} />
               <Boton label="Cancel" onPress={() => setAmountModalVisible(false)} />
             </View>
