@@ -1,119 +1,123 @@
-import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Pressable,
+  type TextInputProps,
+  type KeyboardTypeOptions,
+} from 'react-native';
 
-type Props = {
+export type InputProps = {
   label?: string;
-  value: string;
-  onChangeText: (t: string) => void;
-  placeholder?: string;
   error?: string;
-  maxlenght?: number; // ← usamos solo esta prop
-  errorMode?: 'inline' | 'bubble';
-  keyboardType?: 'default'|'email-address'|'numeric'|'phone-pad';
-  autoCapitalize?: 'none'|'sentences'|'words'|'characters';
-  secureTextEntry?: boolean;  
-  onBlur?: () => void;
-};
+  keyboardType?: KeyboardTypeOptions;
+} & Omit<TextInputProps, 'keyboardType'>;
 
+/**
+ * Input reusable del Proyecto ERA.
+ * - Soporta "bubble" de error.
+ * - Expone keyboardType con el tipo correcto de RN.
+ * - Si secureTextEntry=true, muestra toggle "Show/Hide" (como en Login).
+ */
 export default function Input({
-  label, value, onChangeText, placeholder,
-  error, errorMode = 'inline',
-  keyboardType='default', autoCapitalize='none',
-  secureTextEntry, onBlur,
-  maxlenght = 10, // ← default 10
-}: Props) {
-  const [focused, setFocused] = useState(false);
-  const [hide, setHide] = useState(!!secureTextEntry);
-  const showInline = !!error && errorMode === 'inline';
-  const showBubble = !!error && errorMode === 'bubble';
+  label,
+  error,
+  keyboardType,
+  style,
+  secureTextEntry,
+  ...rest
+}: InputProps) {
+  const [secure, setSecure] = useState<boolean>(!!secureTextEntry);
 
-  const resolvedMaxLength = typeof maxlenght === 'number' ? maxlenght : 10;
+  // Si el caller cambia secureTextEntry, respetarlo (sin resetear el toggle en cada render)
+  const wantsToggle = useMemo(() => !!secureTextEntry, [secureTextEntry]);
 
   return (
-    <View
-      style={[styles.wrap, showBubble && { marginBottom: 26 }]}
-      accessibilityLabel={label || 'input'}
-      accessibilityHint={error ? `Error: ${error}` : undefined}
-    >
+    <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
 
-      <View style={[styles.box, focused && styles.boxFocus, !!error && styles.boxError]}>
+      <View style={[styles.inputRow, error ? styles.inputError : null, style]}>
         <TextInput
-          style={styles.input}
-          value={value ?? ''} // nunca undefined
-          onChangeText={(t) => onChangeText(t.slice(0, resolvedMaxLength))} // ← recorte
-          placeholder={placeholder}
+          {...rest}
           keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          secureTextEntry={hide}
-          onFocus={() => setFocused(true)}
-          onBlur={() => { setFocused(false); onBlur?.(); }}
-
-          maxLength={resolvedMaxLength}        // ← límite nativo
-          underlineColorAndroid="transparent"
-          selectionColor="#111827"
-          placeholderTextColor="#6b7280"
-          allowFontScaling={false}
+          secureTextEntry={wantsToggle ? secure : secureTextEntry}
+          style={styles.input}
+          placeholderTextColor="#9CA3AF"
         />
 
-        {secureTextEntry ? (
-          <Text onPress={() => setHide(v => !v)} style={styles.toggle}>
-            {hide ? 'Show' : 'Hide'}
-          </Text>
+        {wantsToggle ? (
+          <Pressable
+            onPress={() => setSecure((v) => !v)}
+            hitSlop={10}
+            style={styles.toggleBtn}
+          >
+            <Text style={styles.toggleText}>{secure ? 'Show' : 'Hide'}</Text>
+          </Pressable>
         ) : null}
       </View>
 
-      {showInline && <Text style={styles.errInline}>{error}</Text>}
-
-      {showBubble && (
-        <>
-          <View style={styles.errBubble}>
-            <Text style={styles.errBubbleText}>{error}</Text>
-          </View>
-          <View style={styles.errCaret} />
-        </>
-      )}
+      {error ? (
+        <View style={styles.bubble}>
+          <Text style={styles.bubbleText}>{error}</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginBottom: 10, position: 'relative' },
-  label: { marginBottom: 6, fontSize: 14, color: '#374151' },
-
-  box: {
-    borderWidth: 1, borderColor: '#ddd', borderRadius: 10,
-    paddingHorizontal: 12, paddingVertical: 10,
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: '#ffffff',
+  wrap: {
+    width: '100%',
   },
-  boxFocus: { borderColor: '#f4a040' },
-  boxError: { borderColor: '#b00020' },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 6,
+  },
 
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+  },
   input: {
     flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 16,
-    lineHeight: 20,
-    color: '#111111',
-    includeFontPadding: true as any,
-    textAlignVertical: 'center' as any,
+    color: '#111827',
   },
-  toggle: { marginLeft: 10, fontWeight: '600', color: '#f4a040' },
-
-  errInline: { marginTop: 4, color: '#b00020', fontSize: 12 },
-
-  errBubble: {
-    position: 'absolute',
-    top: '100%', left: 12, marginTop: 8,
-    backgroundColor: '#b00020',
-    paddingVertical: 6, paddingHorizontal: 10,
-    borderRadius: 8, zIndex: 2
+  inputError: {
+    borderColor: '#EF4444',
   },
-  errBubbleText: { color: '#fff', fontSize: 12 },
-  errCaret: {
-    position: 'absolute',
-    top: '100%', left: 22, marginTop: 2,
-    width: 8, height: 8, backgroundColor: '#b00020',
-    transform: [{ rotate: '45deg' }], zIndex: 1, borderRadius: 1
-  }
+
+  toggleBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  toggleText: {
+    color: '#2563EB',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  bubble: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#EF4444',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  bubbleText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
 });

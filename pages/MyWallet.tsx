@@ -10,9 +10,11 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  type KeyboardTypeOptions,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { requestForm } from '../services/http';
 import Boton from '../components/boton';
@@ -98,6 +100,9 @@ const MyWallet: React.FC = () => {
   const [paystackBusy, setPaystackBusy] = useState<boolean>(false);
 
   const webRef = useRef<WebView>(null);
+
+  // ✅ Teclado numérico sin romper TypeScript
+  const kbType: KeyboardTypeOptions = Platform.OS === 'ios' ? 'number-pad' : 'numeric';
 
   const loadWallet = async () => {
     try {
@@ -323,6 +328,7 @@ const MyWallet: React.FC = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        keyboardShouldPersistTaps="handled"
       >
         {lastUpdate ? <Text style={styles.lastUpdate}>Last update: {lastUpdate}</Text> : null}
 
@@ -398,41 +404,58 @@ const MyWallet: React.FC = () => {
       <Modal visible={amountModalVisible} animationType="slide" transparent>
         <View style={styles.modalBackdrop}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.modalCard}
+            // En Android, 'height' funciona mejor para bottom-sheets.
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            // Ajuste típico: header + safe area. Si tu Layout agrega un Header fijo, subilo.
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+            style={styles.kav}
           >
-            <Text style={styles.modalTitle}>
-              {amountMode === 'TOPUP' ? 'Recharge wallet' : 'Transfer to passenger wallet'}
-            </Text>
-            <Text style={styles.modalSub}>
-              {amountMode === 'TOPUP'
-                ? 'Enter amount in NGN'
-                : `Enter amount in NGN (max ${naira(walletDriver)})`}
-            </Text>
+            <View style={styles.modalCard}>
+              {/* Scroll interno: si el teclado tapa, podés scrollear y ver lo que escribís */}
+             <KeyboardAwareScrollView
+                enableOnAndroid
+                enableAutomaticScroll
+                keyboardShouldPersistTaps="handled"
+                extraScrollHeight={80}   // 👈 subí esto (probá 80–140)
+                extraHeight={80}         // 👈 subí esto (probá 80–140)
+                keyboardOpeningTime={0}  // 👈 en algunos android ayuda 0 o 50
+                contentContainerStyle={{ paddingBottom: 140 }} // 👈 importante para que pueda “subir” más
+              >
+                <Text style={styles.modalTitle}>
+                  {amountMode === 'TOPUP' ? 'Recharge wallet' : 'Transfer to passenger wallet'}
+                </Text>
+                <Text style={styles.modalSub}>
+                  {amountMode === 'TOPUP'
+                    ? 'Enter amount in NGN'
+                    : `Enter amount in NGN (max ${naira(walletDriver)})`}
+                </Text>
 
-            <Input
-              label="Amount"
-              value={amount}
-              onChangeText={(t: string) => {
-                setAmount(t);
-                if (amountErr) setAmountErr('');
-              }}
-              keyboardType="numeric"
-              placeholder="e.g. 5000"
-              error={amountErr ? amountErr : undefined}
-            />
+                <Input
+                  label="Amount"
+                  value={amount}
+                  onChangeText={(t: string) => {
+                    setAmount(t);
+                    if (amountErr) setAmountErr('');
+                  }}
+                  // numeric en Android a veces no sube bien el KAV; number-pad suele comportarse mejor.
+                  // Nota TS: nuestro componente Input puede no exponer el tipo exacto de keyboardType.
+                  // Forzamos el tipo acá para evitar error de compilación sin tocar el componente Input.
+                  keyboardType={kbType}
+                  placeholder="e.g. 5000"
+                  error={amountErr ? amountErr : undefined}
+                />
 
-            <View style={{ height: 12 }} />
+                <View style={{ height: 12 }} />
 
-            <View
-              style={[disabledWhilePaystack && { opacity: 0.6 }]}
-            >
-              <Boton
-                label={amountMode === 'TOPUP' ? 'Continue to Paystack' : 'Transfer'}
-                onPress={amountMode === 'TOPUP' ? startTopup : startTransfer}
-              />
-              <View style={{ height: 10 }} />
-              <Boton label="Cancel" onPress={() => setAmountModalVisible(false)} />
+                <View style={[disabledWhilePaystack && { opacity: 0.6 }]}>
+                  <Boton
+                    label={amountMode === 'TOPUP' ? 'Continue to Paystack' : 'Transfer'}
+                    onPress={amountMode === 'TOPUP' ? startTopup : startTransfer}
+                  />
+                  <View style={{ height: 10 }} />
+                  <Boton label="Cancel" onPress={() => setAmountModalVisible(false)} />
+                </View>
+              </KeyboardAwareScrollView>
             </View>
           </KeyboardAvoidingView>
         </View>
@@ -531,6 +554,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
     justifyContent: 'flex-end',
+  },
+  kav: {
+    width: '100%',
   },
   modalCard: {
     backgroundColor: '#fff',
