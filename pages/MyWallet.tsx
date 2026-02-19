@@ -403,44 +403,51 @@ const MyWallet: React.FC = () => {
       <Modal visible={amountModalVisible} animationType="slide" transparent>
         <View style={styles.modalBackdrop}>
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            // Android: el teclado numérico suele tapar inputs en modales bottom-sheet si no ajustamos altura.
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             // Fix: en release (edge-to-edge) el footer del sistema puede tapar el botón "Cancel"
             style={[styles.modalCard, { paddingBottom: 16 + insets.bottom }]}
           >
-            <Text style={styles.modalTitle}>
-              {amountMode === 'TOPUP' ? 'Recharge wallet' : 'Transfer to passenger wallet'}
-            </Text>
-            <Text style={styles.modalSub}>
-              {amountMode === 'TOPUP'
-                ? 'Enter amount in NGN'
-                : `Enter amount in NGN (max ${naira(walletDriver)})`}
-            </Text>
-
-            <Input
-              label="Amount"
-              value={amount}
-              onChangeText={(t: string) => {
-                setAmount(t);
-                if (amountErr) setAmountErr('');
-              }}
-              keyboardType="numeric"
-              placeholder="e.g. 5000"
-              error={amountErr ? amountErr : undefined}
-            />
-
-            <View style={{ height: 12 }} />
-
-            <View
-              pointerEvents={disabledWhilePaystack ? 'none' : 'auto'}
-              style={disabledWhilePaystack && { opacity: 0.6 }}
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 0 }}
             >
-              <Boton
-                label={amountMode === 'TOPUP' ? 'Continue to Paystack' : 'Transfer'}
-                onPress={amountMode === 'TOPUP' ? startTopup : startTransfer}
+              <Text style={styles.modalTitle}>
+                {amountMode === 'TOPUP' ? 'Recharge wallet' : 'Transfer to passenger wallet'}
+              </Text>
+              <Text style={styles.modalSub}>
+                {amountMode === 'TOPUP'
+                  ? 'Enter amount in NGN'
+                  : `Enter amount in NGN (max ${naira(walletDriver)})`}
+              </Text>
+
+              <Input
+                label="Amount"
+                value={amount}
+                onChangeText={(t: string) => {
+                  setAmount(t);
+                  if (amountErr) setAmountErr('');
+                }}
+                keyboardType="numeric"
+                placeholder="e.g. 5000"
+                error={amountErr ? amountErr : undefined}
               />
-              <View style={{ height: 10 }} />
-              <Boton label="Cancel" onPress={() => setAmountModalVisible(false)} />
-            </View>
+
+              <View style={{ height: 12 }} />
+
+              <View
+                pointerEvents={disabledWhilePaystack ? 'none' : 'auto'}
+                style={disabledWhilePaystack && { opacity: 0.6 }}
+              >
+                <Boton
+                  label={amountMode === 'TOPUP' ? 'Continue to Paystack' : 'Transfer'}
+                  onPress={amountMode === 'TOPUP' ? startTopup : startTransfer}
+                />
+                <View style={{ height: 10 }} />
+                <Boton label="Cancel" onPress={() => setAmountModalVisible(false)} />
+              </View>
+            </ScrollView>
           </KeyboardAvoidingView>
         </View>
       </Modal>
