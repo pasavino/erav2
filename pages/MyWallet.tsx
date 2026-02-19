@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { requestForm } from '../services/http';
 import Boton from '../components/boton';
@@ -70,6 +71,7 @@ const naira = (v: any) => {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const MyWallet: React.FC = () => {
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
@@ -402,7 +404,8 @@ const MyWallet: React.FC = () => {
         <View style={styles.modalBackdrop}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.modalCard}
+            // Fix: en release (edge-to-edge) el footer del sistema puede tapar el botón "Cancel"
+            style={[styles.modalCard, { paddingBottom: 16 + insets.bottom }]}
           >
             <Text style={styles.modalTitle}>
               {amountMode === 'TOPUP' ? 'Recharge wallet' : 'Transfer to passenger wallet'}
