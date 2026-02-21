@@ -445,6 +445,7 @@ function AccountTab() {
       <NavItem title="My vehicles" to="Car" />
       <NavItem title="Trip preferences" to="TripPreferences" />
       <NavItem title="My wallet" to="MyWallet" />
+      <NavItem title="Bank account" to="BankAccount" />
       <NavItem title="Travel history" to="TravelHistory" />
       <NavItem title="Travel history driver" to="TravelHistoryDriver" />
       <NavItem title="Notifications" to="Notifications" />

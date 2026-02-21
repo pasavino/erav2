@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import Register from './pages/Register';
 import TripFindResult from './pages/TripFindResult'; // ya lo tenías importado
+import BankAccount from './pages/BankAccount';
 import { AuthProvider, useAuth } from './context/Auth';
 import BookTrip from './pages/BookTrip';
 //import TravelHistory from './pages/TravelHistory';
@@ -109,6 +110,7 @@ function Gate() {
           {/* Flujo logueado */}
           <Stack.Screen name="MainTabs" component={MainTabs} />
           <Stack.Screen name="TripFindResult" component={TripFindResult} />
+          <Stack.Screen name="BankAccount" component={BankAccount} />
           {/* Alias para cualquier RESET a 'Home' */}
           <Stack.Screen name="Home" component={MainTabs} />
           <Stack.Screen name="BookTrip" component={BookTrip} />          
