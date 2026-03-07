@@ -17,10 +17,12 @@ import TravelHistory from './TravelHistory';
 import Notifications from './Notifications';
 import TravelHistoryDriver from './TravelHistoryDriver';
 import MyWallet from './MyWallet';
+import TripManager from './TripManager';
+import TripPax from './TripPax';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
-const CarStackNav = createNativeStackNavigator();
+const TripStackNav = createNativeStackNavigator();
 const ProfileStackNav = createNativeStackNavigator();
 
 function HomeStack() {
@@ -39,12 +41,16 @@ function HomeStack() {
   );
 }
 
-function CarStack() {
+function TripStack() {
   return (
-    <CarStackNav.Navigator screenOptions={{ headerShown: false }}>
-      <CarStackNav.Screen name="Car" component={Car} />
-      <CarStackNav.Screen name="AddVehicle" component={AddVehicle} />
-    </CarStackNav.Navigator>
+    <TripStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <TripStackNav.Screen name="TripManager" component={TripManager} />
+      <TripStackNav.Screen
+        name="TripPax"
+        component={TripPax}
+        options={{ headerShown: true, title: 'Passenger list' }}
+      />
+    </TripStackNav.Navigator>
   );
 }
 
@@ -85,6 +91,16 @@ function ProfileStack() {
         component={Notifications}
         options={{ headerTitle: 'Notifications' }}
       />
+      <ProfileStackNav.Screen
+        name="Car"
+        component={Car}
+        options={{ title: 'My vehicles' }}
+      />
+      <ProfileStackNav.Screen
+        name="AddVehicle"
+        component={AddVehicle}
+        options={{ title: 'Add vehicle' }}
+      />
     </ProfileStackNav.Navigator>
   );
 }
@@ -104,16 +120,16 @@ export default function MainTabs() {
           let name: keyof typeof Ionicons.glyphMap = 'ellipse';
           if (route.name === 'Home')         name = focused ? 'home'       : 'home-outline';
           if (route.name === 'Publish ride') name = focused ? 'add-circle' : 'add-circle-outline';
-          if (route.name === 'Car')          name = focused ? 'car'        : 'car-outline';
+          if (route.name === 'TripManager')  name = focused ? 'navigate'   : 'navigate-outline';
           if (route.name === 'Profile')      name = focused ? 'person'     : 'person-outline';
           return <Ionicons name={name} size={size} color={color} />;
         },
       })}
     >
-      {/* Orden: 1-Home, 2-Publish ride, 3-Car, 4-Profile */}
+      {/* Orden: 1-Home, 2-Publish ride, 3-Trip Manager, 4-Profile */}
       <Tab.Screen name="Home" component={HomeStack} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="Publish ride" component={Publish} options={{ tabBarLabel: 'Publish ride' }} />
-      <Tab.Screen name="Car" component={CarStack} options={{ tabBarLabel: 'My Car' }} />
+      <Tab.Screen name="TripManager" component={TripStack} options={{ tabBarLabel: 'Trip Manager' }} />
       <Tab.Screen name="Profile" component={ProfileStack} options={{ tabBarLabel: 'Profile' }} />      
     </Tab.Navigator>
   );

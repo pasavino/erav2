@@ -1,7 +1,17 @@
 // /services/rides.ts
 import { requestForm } from './http';
 
-export type Ride = { id: string; from: string; to: string; date: string; price: number };
+export type Ride = {
+  IdViaje: number | string;
+  IdUsuarioDriver?: number | string;
+  CityFrom: string;
+  CityTo: string;
+  FechaHora: string;
+  Estado: number;
+  Pax?: number;
+  EstadoNombre?: string;
+  Icono?: string;
+};
 export type SearchRidesExtra = { lista: Ride[] };
 
 export const rides = {
@@ -10,4 +20,18 @@ export const rides = {
     requestForm<SearchRidesExtra>('/ax_search_rides.php', {
       from: q.from, to: q.to, date: q.date || ''
     }),
+
+  // === Driver side helpers (nuevo) ===
+  // lista los viajes disponibles para iniciar o gestionar.
+  // { lista:[Ride] }
+  list: () => requestForm<SearchRidesExtra>('/ax_list_rides.php', {}),
+
+  // iniciar un viaje dado su id (devuelve error 0 si OK)
+  start: (rideId: string) => requestForm('/ax_start_ride.php', { idviaje: rideId }),
+
+  // finalizar un viaje activo
+  finish: (rideId: string) => requestForm('/ax_finish_ride.php', { idviaje: rideId }),
+
+  // Obtener lista de pasajeros para un viaje
+  passengers: (rideId: string) => requestForm<{ lista: { NombrePax: string; Telefono: string; Seat?: number; Bags?: number }[] }>('/ax_list_passengers.php', { idviaje: rideId }),
 };
