@@ -27,7 +27,12 @@ export const rides = {
   list: () => requestForm<SearchRidesExtra>('/ax_list_rides.php', {}),
 
   // iniciar un viaje dado su id (devuelve error 0 si OK)
-  start: (rideId: string) => requestForm('/ax_start_ride.php', { idviaje: rideId }),
+  // Se puede enviar la ubicación actual para validar que el conductor inició en el origen
+  start: (rideId: string, coords?: { lat: number; lng: number }) =>
+    requestForm('/ax_start_ride.php', {
+      idviaje: rideId,
+      ...(coords ? { lat: String(coords.lat), lng: String(coords.lng) } : {}),
+    }),
 
   // finalizar un viaje activo
   finish: (rideId: string) => requestForm('/ax_finish_ride.php', { idviaje: rideId }),

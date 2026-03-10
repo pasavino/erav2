@@ -12,6 +12,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
 
 import { rides } from '../services/rides';
 import type { Ride } from '../services/rides';
@@ -28,6 +29,8 @@ export default function TripManager() {
   const [loading, setLoading] = useState<boolean>(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [working, setWorking] = useState<boolean>(false);
+  const [workingAction, setWorkingAction] = useState<'start' | 'finish' | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
@@ -41,6 +44,7 @@ export default function TripManager() {
     const active = list.find(r => r.Estado === 4);
     return active ? getId(active) : null;
   };
+
 
   const syncActiveId = async (id: string | null) => {
     setActiveId(id);
@@ -87,13 +91,45 @@ export default function TripManager() {
   const handleStart = async (rideId: string) => {
     if (activeId) return;
     setWorking(true);
+    setWorkingAction('start');
+
+    // Intentar obtener ubicación actual (para enviar al backend y validar origen)
     try {
-      await rides.start(rideId);
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Location permission denied');
+      }
+
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+      // Optimistic UI: marcar el viaje como activo inmediatamente para que el botón cambie a "Finish"
+      setActiveId(rideId);
+      setTrips(prev =>
+        prev.map(t => (getId(t) === rideId ? { ...t, Estado: 4 } : t))
+      );
+
+      const res = await rides.start(rideId, coords);
+      if (!res || res.error !== 0) {
+        const msg = res?.msg || 'Could not start trip';
+        console.warn('start failed', msg);
+        setErrorMsg(msg);
+        // revertir el estado en caso de error
+        setActiveId(null);
+        setTrips(prev => prev.map(t => (getId(t) === rideId ? { ...t, Estado: 1 } : t)));
+        return;
+      }
+
       await loadTrips();
-    } catch (e) {
-      console.warn('start failed', e);
+    } catch (e: any) {
+      const msg = e?.message || 'Could not start trip';
+      console.warn('start failed', msg);
+      setErrorMsg(msg);
+      setActiveId(null);
+      setTrips(prev => prev.map(t => (getId(t) === rideId ? { ...t, Estado: 1 } : t)));
     } finally {
       setWorking(false);
+      setWorkingAction(null);
     }
   };
 
@@ -108,25 +144,51 @@ export default function TripManager() {
   const handleFinish = async () => {
     if (!activeId) return;
     setWorking(true);
+    setWorkingAction('finish');
+
+    // Optimistic UI: cerrar el viaje en UI mientras se espera respuesta
+    const closingId = activeId;
+    setActiveId(null);
+    setTrips(prev => prev.map(t => (getId(t) === closingId ? { ...t, Estado: 1 } : t)));
+
     try {
-      await rides.finish(activeId);
+      const res = await rides.finish(closingId);
+      if (!res || res.error !== 0) {
+        const msg = res?.msg || 'Could not finish trip';
+        console.warn('finish failed', msg);
+        setErrorMsg(msg);
+        // revertimos si hubo error
+        setActiveId(closingId);
+        setTrips(prev => prev.map(t => (getId(t) === closingId ? { ...t, Estado: 4 } : t)));
+        return;
+      }
+
       await loadTrips();
-    } catch (e) {
-      console.warn('finish failed', e);
+    } catch (e: any) {
+      const msg = e?.message || 'Could not finish trip';
+      console.warn('finish failed', msg);
+      setErrorMsg(msg);
+      setActiveId(closingId);
+      setTrips(prev => prev.map(t => (getId(t) === closingId ? { ...t, Estado: 4 } : t)));
     } finally {
       setWorking(false);
+      setWorkingAction(null);
     }
   };
 
   const handleConfirmAction = async () => {
     if (!confirmation) return;
-    const rideId = getId(confirmation.ride);
-    if (confirmation.type === 'start') {
+
+    // Close the confirmation modal first and show a waiting modal while backend works
+    const action = confirmation;
+    setConfirmation(null);
+
+    const rideId = getId(action.ride);
+    if (action.type === 'start') {
       await handleStart(rideId);
-    } else if (confirmation.type === 'finish') {
+    } else if (action.type === 'finish') {
       await handleFinish();
     }
-    setConfirmation(null);
   };
 
   const cancelConfirmation = () => setConfirmation(null);
@@ -238,6 +300,28 @@ export default function TripManager() {
               ]
             : []
         }
+      />
+
+      <AppModal
+        visible={working}
+        title="Please wait"
+        message={
+          workingAction === 'start'
+            ? 'Starting trip…'
+            : workingAction === 'finish'
+            ? 'Finishing trip…'
+            : 'Waiting for the server response…'
+        }
+        onClose={() => {}}
+        actions={[]}
+      />
+
+      <AppModal
+        visible={!!errorMsg}
+        title="Error"
+        message={errorMsg || ''}
+        onClose={() => setErrorMsg(null)}
+        actions={errorMsg ? [{ label: 'OK', onPress: () => setErrorMsg(null), variant: 'danger' }] : []}
       />
     </View>
   );
