@@ -68,14 +68,17 @@ export default function TripManager() {
     try {
       const res = await rides.list();
       const list = res.lista || [];
+      // Log estados de los viajes
+      console.log('Estados de viajes:', list.map(t => ({ id: t.IdViaje, estado: t.Estado })));
       setTrips(list);
 
       const activeFromBackend = computeActiveId(list);
+      console.log('activeId calculado:', activeFromBackend);
       if (activeFromBackend) {
         await syncActiveId(activeFromBackend);
       } else {
-        const stored = await AsyncStorage.getItem('ACTIVE_TRIP');
-        if (stored) await syncActiveId(stored);
+        // Si no hay viaje en estado 4, limpiar activeId y AsyncStorage
+        await syncActiveId(null);
       }
     } catch (e) {
       console.warn('Failed to load trips', e);
@@ -102,6 +105,7 @@ export default function TripManager() {
 
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      console.log('Coordenadas enviadas al iniciar viaje:', coords);
 
       // Optimistic UI: marcar el viaje como activo inmediatamente para que el botón cambie a "Finish"
       setActiveId(rideId);
@@ -152,7 +156,16 @@ export default function TripManager() {
     setTrips(prev => prev.map(t => (getId(t) === closingId ? { ...t, Estado: 1 } : t)));
 
     try {
-      const res = await rides.finish(closingId);
+      // Obtener ubicación actual
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Location permission denied');
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      console.log('Coordenadas enviadas al finalizar viaje:', coords);
+
+      const res = await rides.finish(closingId, coords, 1);
       if (!res || res.error !== 0) {
         const msg = res?.msg || 'Could not finish trip';
         console.warn('finish failed', msg);
@@ -194,13 +207,46 @@ export default function TripManager() {
   const cancelConfirmation = () => setConfirmation(null);
 
 
+  const [forceEndWorking, setForceEndWorking] = useState<boolean>(false);
+  const [forceEndConfirmation, setForceEndConfirmation] = useState<{ rideId: string } | null>(null);
+
+  const handleForceEnd = async (rideId: string) => {
+    setForceEndWorking(true);
+    try {
+      // Obtener ubicación actual
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Location permission denied');
+      }
+      const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
+      const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      console.log('Coordenadas enviadas al forzar fin de viaje:', coords);
+
+      const res = await rides.finish(rideId, coords, 2);
+      if (!res || res.error !== 0) {
+        const msg = res?.msg || 'Could not force end trip';
+        setErrorMsg(msg);
+        return;
+      }
+      await loadTrips();
+    } catch (e: any) {
+      setErrorMsg(e?.message || 'Could not force end trip');
+    } finally {
+      setForceEndWorking(false);
+      setForceEndConfirmation(null);
+    }
+  };
+
   const renderItem = ({ item }: { item: Ride; index: number }) => {
     const id = getId(item);
     const isActive = id === activeId;
     const hasActive = !!activeId;
-    const canStart = item.Estado === 1 && !hasActive;
-    const canFinish = item.Estado === 4 && (!hasActive || isActive);
+    const canStart = (item.Estado === 1 || item.Estado === 2) && !hasActive;
+    const canFinish = item.Estado === 4 && isActive;
     const pax = item.Pax ?? 0;
+    const isTraveling = item.Estado === 4;
+    // Log para depuración
+    console.log(`renderItem: id=${id}, estado=${item.Estado}, hasActive=${hasActive}, canStart=${canStart}, canFinish=${canFinish}`);
 
     return (
       <View style={styles.card}>
@@ -208,7 +254,10 @@ export default function TripManager() {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{item.CityFrom} → {item.CityTo}</Text>
             <Text style={styles.subtitle}>{item.FechaHora}</Text>
-            {item.EstadoNombre ? <Text style={styles.statusText}>{item.EstadoNombre}</Text> : null}
+            {/* Cambia el texto de Boarding a Traveling si está en estado 4 */}
+            <Text style={styles.statusText}>
+              {isTraveling ? 'Traveling' : item.EstadoNombre || ''}
+            </Text>
           </View>
           {item.Icono ? (
             <MaterialCommunityIcons name={item.Icono as any} size={24} color="#111" />
@@ -225,24 +274,42 @@ export default function TripManager() {
             <Text style={styles.paxLink}>{pax} pax</Text>
           </TouchableOpacity>
 
-          {canFinish ? (
+          {hasActive
+            ? (isActive && canFinish
+                ? (
+                    <TouchableOpacity
+                      disabled={working}
+                      onPress={() => setConfirmation({ type: 'finish', ride: item })}
+                      style={[styles.button, working && styles.buttonDisabled]}
+                    >
+                      <Text style={styles.buttonText}>{working ? 'Finishing…' : 'End trip'}</Text>
+                    </TouchableOpacity>
+                  )
+                : <Text style={styles.statusHint}>No actions available</Text>
+              )
+            : (canStart
+                ? (
+                    <TouchableOpacity
+                      disabled={working}
+                      onPress={() => setConfirmation({ type: 'start', ride: item })}
+                      style={[styles.button, working && styles.buttonDisabled]}
+                    >
+                      <Text style={styles.buttonText}>{working ? 'Starting…' : 'Start trip'}</Text>
+                    </TouchableOpacity>
+                  )
+                : <Text style={styles.statusHint}>No actions available</Text>
+              )
+          }
+
+          {/* Botón Force End solo si está en Traveling */}
+          {isTraveling && (
             <TouchableOpacity
-              disabled={working}
-              onPress={() => setConfirmation({ type: 'finish', ride: item })}
-              style={[styles.button, working && styles.buttonDisabled]}
+              disabled={forceEndWorking}
+              onPress={() => setForceEndConfirmation({ rideId: id })}
+              style={[styles.button, forceEndWorking && styles.buttonDisabled, { marginLeft: 8, backgroundColor: '#d32f2f' }]}
             >
-              <Text style={styles.buttonText}>{working ? 'Finishing…' : 'Finish trip'}</Text>
+              <Text style={styles.buttonText}>{forceEndWorking ? 'Ending…' : 'Force End'}</Text>
             </TouchableOpacity>
-          ) : canStart ? (
-            <TouchableOpacity
-              disabled={working}
-              onPress={() => setConfirmation({ type: 'start', ride: item })}
-              style={[styles.button, working && styles.buttonDisabled]}
-            >
-              <Text style={styles.buttonText}>{working ? 'Starting…' : 'Start trip'}</Text>
-            </TouchableOpacity>
-          ) : (
-            <Text style={styles.statusHint}>No actions available</Text>
           )}
         </View>
       </View>
@@ -255,11 +322,7 @@ export default function TripManager() {
         <Text style={styles.pageTitle}>Trip Manager</Text>
       </View>
 
-      {activeId && (
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>Active trip ID: {activeId}</Text>
-        </View>
-      )}
+      {/* ...existing code... */}
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 40 }} />
@@ -300,6 +363,23 @@ export default function TripManager() {
               ]
             : []
         }
+      />
+
+      {/* Modal de confirmación Force End */}
+      <AppModal
+        visible={!!forceEndConfirmation}
+        title="Force End Trip?"
+        message="Forcing the termination of the trip means that the passenger will be refunded. Are you sure you want to force end this trip?"
+        onClose={() => setForceEndConfirmation(null)}
+        actions={forceEndConfirmation ? [
+          { label: 'No', onPress: () => setForceEndConfirmation(null), variant: 'ghost' },
+          {
+            label: 'Yes',
+            onPress: () => handleForceEnd(forceEndConfirmation.rideId),
+            variant: 'danger',
+            loading: forceEndWorking,
+          },
+        ] : []}
       />
 
       <AppModal
