@@ -58,11 +58,11 @@ pushd "$ANDROID_DIR" >/dev/null
 chmod +x ./gradlew || true
 if [[ "$BUILD_TYPE" == "release" ]]; then
   log "Compilando APK release..."
-  ./gradlew --no-daemon assembleRelease
+  NODE_ENV=production ./gradlew --no-daemon assembleRelease
   OUT_DIR="app/build/outputs/apk/release"
 else
   log "Compilando APK debug..."
-  ./gradlew --no-daemon assembleDebug
+  NODE_ENV=production ./gradlew --no-daemon assembleDebug
   OUT_DIR="app/build/outputs/apk/debug"
 fi
 
