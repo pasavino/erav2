@@ -66,7 +66,7 @@ export default function HistoryTrip() {
       else setLoadingMore(true);
 
       const res = await ensureOk<ApiResp>(
-        requestForm('/ax_HistoryTrip.php', { page: p, pageSize: PAGE_SIZE })
+        requestForm('/ax_HistoryTripPassenger.php', { page: p, pageSize: PAGE_SIZE })
       );
       const batch = Array.isArray(res.data) ? res.data : [];
 
@@ -159,34 +159,33 @@ export default function HistoryTrip() {
         ListFooterComponent={
           loadingMore ? <View style={styles.footerLoad}><ActivityIndicator /></View> : <View style={{ height: 12 }} />
         }
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            {/* Icono a la izquierda (según JSON) */}
-            <MaterialCommunityIcons
-              name={item.icono as any}
-              size={22}
-              color={item.Estado === 1 ? '#16a34a' : '#111827'}
-              style={{ marginRight: 8 }}
-            />
-            {/* Contenido en múltiples renglones */}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.name} numberOfLines={1}>{item.FromTo}</Text>
-              <Text style={styles.subtitle}>{item.FechaViaje} • {item.HoraViaje}</Text>
-              <Text style={styles.subtitle}>Driver: {String(item.NomDriver ?? '').trim()}</Text>
-              <Text style={styles.subtitle}>
-                Seats: {item.CntAcientos} • Bags: {item.CntValijas} • Total: {naira(item.Total)}
-              </Text>
+        renderItem={({ item }) => {          
+          return (
+            <View style={styles.row}>
+              {/* Icono a la izquierda (según JSON) */}
+              <MaterialCommunityIcons
+                name={item.icono as any}
+                size={22}
+                color={item.Estado === 1 ? '#16a34a' : '#111827'}
+                style={{ marginRight: 8 }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name} numberOfLines={1}>{item.FromTo}</Text>
+                <Text style={styles.subtitle}>{item.FechaViaje} • {item.HoraViaje}</Text>
+                <Text style={styles.subtitle}>Driver: {String(item.NomDriver ?? '').trim()}</Text>
+                <Text style={styles.subtitle}>
+                  Seats: {item.CntAcientos} • Bags: {item.CntValijas} • Total: {naira(item.Total)}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => askDelete(item)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="trash-outline" size={22} color="#b91c1c" />
+              </TouchableOpacity>
             </View>
-
-            {/* Eliminar a la derecha (mismo patrón que Car.tsx) */}
-            <TouchableOpacity
-              onPress={() => askDelete(item)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="trash-outline" size={22} color="#b91c1c" />
-            </TouchableOpacity>
-          </View>
-        )}
+          );
+        }}
       />
 
       {/* Modal confirmación (look & feel como Car.tsx) */}
@@ -200,18 +199,20 @@ export default function HistoryTrip() {
           <View style={styles.modalCardPretty}>
             <Ionicons name="alert-circle" size={36} color="#D32F2F" style={styles.modalIcon} />
             <Text style={styles.modalTitle}>Delete trip?</Text>
-
-            {confirmItem && confirmItem.Estado >= 2 ? (
+            {confirmItem && confirmItem.Estado === 6 ? (
+              <Text style={styles.modalMessage}>
+                You are currently on a trip, no refund will be issued.
+              </Text>
+            ) : confirmItem && confirmItem.Estado === 2 ? (
               <Text style={styles.modalMessage}>
                 Are you sure you want to delete the trip?
               </Text>
             ) : (
               <Text style={styles.modalMessage}>
-                If the trip is still reserved, the driver will be notified of your cancellation.{'\n'}
+                If the trip is still reserved, the driver will be notified of your cancellation.{"\n"}
                 <Text style={styles.bold}>No refunds for cancellations within 24 hours.</Text>
               </Text>
             )}
-
             <View style={styles.modalActions}>
               <TouchableOpacity
                 onPress={() => setConfirmItem(null)}
@@ -221,7 +222,6 @@ export default function HistoryTrip() {
               >
                 <Text style={styles.modalBtnText}>Cancel</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 onPress={confirmDelete}
                 disabled={deleting}

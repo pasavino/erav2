@@ -1,5 +1,6 @@
 // /pages/HistoryTrip.tsx
 // Historial de viajes del driver
+// ESTA SCREEN POR AHORA QUEDA DESHABILITADA
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
@@ -16,15 +17,11 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { requestForm, ensureOk } from '../services/http';
 
-type TripRow = {
-  IdRegistro: number;
-  IdViaje: number;
-  NomDriver: string;
+type TripRow = {  
+  IdViaje: number;  
   CntAcientos: number;
   CntValijas: number;
   FromTo: string;
-  PrecioViaje: number;
-  PrecioValija: number;
   Total: number;
   FechaViaje: string; // YYYY-MM-DD
   HoraViaje: string;  // "09:00 AM"
@@ -72,7 +69,7 @@ export default function HistoryTrip() {
 
       setHasMore(batch.length === PAGE_SIZE);
       setItems(prev =>
-        p === 1 ? batch : [...prev, ...batch.filter(n => !prev.some(x => x.IdRegistro === n.IdRegistro))]
+        p === 1 ? batch : [...prev, ...batch.filter(n => !prev.some(x => x.IdViaje === n.IdViaje))]
       );
       setPage(p);
     } catch (e: any) {
@@ -113,7 +110,7 @@ export default function HistoryTrip() {
     setDeleting(true);
     try {
       const res = await requestForm('/ax_deleteHistoryTrip.php', {
-        IdRegistro: String(confirmItem.IdRegistro),
+        IdViaje: String(confirmItem.IdViaje),TipoBorrado: String("Driver")
       });
 
       if (!res || res.error !== 0) {
@@ -122,7 +119,7 @@ export default function HistoryTrip() {
       }
 
       // éxito: quitar de la lista
-      setItems(prev => prev.filter(r => r.IdRegistro !== confirmItem.IdRegistro));
+      setItems(prev => prev.filter(r => r.IdViaje !== confirmItem.IdViaje));
     } catch (e: any) {
       setErrorMsg(e?.message || 'Delete failed');
     } finally {
@@ -144,7 +141,7 @@ export default function HistoryTrip() {
     <View style={styles.container}>
       <FlatList
         data={items}
-        keyExtractor={(it) => String(it.IdRegistro)}
+        keyExtractor={(it) => String(it.IdViaje)}
         showsVerticalScrollIndicator={false}
         overScrollMode="never"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
@@ -172,7 +169,7 @@ export default function HistoryTrip() {
             <View style={{ flex: 1 }}>
               <Text style={styles.name} numberOfLines={1}>{item.FromTo}</Text>
               <Text style={styles.subtitle}>{item.FechaViaje} • {item.HoraViaje}</Text>
-              <Text style={styles.subtitle}>Driver: {String(item.NomDriver ?? '').trim()}</Text>
+              
               <Text style={styles.subtitle}>
                 Seats: {item.CntAcientos} • Bags: {item.CntValijas} • Total: {naira(item.Total)}
               </Text>

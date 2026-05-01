@@ -333,10 +333,9 @@ function PersonalInfoTab() {
         onChangeText={onChangeFirst}
         placeholder="Your first name"
         autoCapitalize="words"
-        maxlenght={50}
+          maxLength={50}
         onBlur={() => setTouched(v => ({ ...v, first: true }))}
-        error={errFirst}
-        errorMode="bubble"
+          error={errFirst}
       />
       <Input
         label="Last name"
@@ -344,10 +343,9 @@ function PersonalInfoTab() {
         onChangeText={onChangeLast}
         placeholder="Your last name"
         autoCapitalize="words"
-        maxlenght={50}
+          maxLength={50}
         onBlur={() => setTouched(v => ({ ...v, last: true }))}
-        error={errLast}
-        errorMode="bubble"
+          error={errLast}
       />
       <Input
         label="Email"
@@ -356,10 +354,9 @@ function PersonalInfoTab() {
         placeholder="you@example.com"
         autoCapitalize="none"
         keyboardType="email-address"
-        maxlenght={50}
+          maxLength={50}
         onBlur={() => setTouched(v => ({ ...v, email: true }))}
-        error={errEmail}
-        errorMode="bubble"
+          error={errEmail}
       />
       <Input
         label="Phone"
@@ -367,10 +364,9 @@ function PersonalInfoTab() {
         onChangeText={onChangePhone}
         placeholder="+54..."
         keyboardType="phone-pad"
-        maxlenght={50}
+          maxLength={50}
         onBlur={() => setTouched(v => ({ ...v, phone: true }))}
-        error={errPhone}
-        errorMode="bubble"
+          error={errPhone}
       />
 
       <View style={{ marginTop:12, marginBottom:4 }}>
@@ -446,8 +442,8 @@ function AccountTab() {
       <NavItem title="Trip preferences" to="TripPreferences" />
       <NavItem title="My wallet" to="MyWallet" />
       <NavItem title="Bank account" to="BankAccount" />
-      <NavItem title="Travel history" to="TravelHistory" />
-      <NavItem title="Travel history driver" to="TravelHistoryDriver" />
+      <NavItem title="My Trips" to="TravelHistory" />
+      {/* <NavItem title="Trips to be taken or taken" to="TravelHistoryDriver" /> */}
       <NavItem title="Notifications" to="Notifications" />
       <NavItem title="Privacy & Terms" to="PrivacyTerms" />
       <NavItem title="About" to="About" />

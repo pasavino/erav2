@@ -220,7 +220,7 @@ export default function TripManager() {
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      console.log('Coordenadas enviadas al forzar fin de viaje:', coords);
+      
 
       const res = await rides.finish(rideId, coords, 2);
       if (!res || res.error !== 0) {

@@ -623,7 +623,7 @@ function CreateTripTab() {
         value={description}
         onChangeText={(t: string) => { setDescription(t); clearErr('description'); }}
         placeholder="Trip description"
-        maxlenght={100}
+        maxLength={100}
       />
       {fieldErrors.description ? <FieldErrorBubble text={fieldErrors.description} /> : null}
 
@@ -634,7 +634,7 @@ function CreateTripTab() {
         onChangeText={(t: string) => { setPriceText(t); clearErr('price'); }}
         placeholder="0"
         keyboardType="numeric"
-        maxlenght={10}
+        maxLength={10}
       />
       {fieldErrors.price ? <FieldErrorBubble text={fieldErrors.price} /> : null}
 

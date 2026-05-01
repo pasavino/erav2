@@ -77,15 +77,16 @@ function ProfileStack() {
       <ProfileStackNav.Screen
         name="TravelHistory"             
         component={TravelHistory}
-        options={{ headerTitle: 'Travel history' }}
+        options={{ headerTitle: 'My Trips' }}
       />
 
+      {/*
       <ProfileStackNav.Screen
         name="TravelHistoryDriver"             
         component={TravelHistoryDriver}
-        options={{ headerTitle: 'Travel history driver' }}
+        options={{ headerTitle: 'Trips to be taken or taken' }}
       />
-
+      */}
       <ProfileStackNav.Screen
         name="Notifications"             
         component={Notifications}
