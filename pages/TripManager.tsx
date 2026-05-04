@@ -206,7 +206,6 @@ export default function TripManager() {
 
   const cancelConfirmation = () => setConfirmation(null);
 
-
   const [forceEndWorking, setForceEndWorking] = useState<boolean>(false);
   const [forceEndConfirmation, setForceEndConfirmation] = useState<{ rideId: string } | null>(null);
 

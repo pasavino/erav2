@@ -109,6 +109,7 @@ const errDate = useMemo(() => {
   };
 
   return (
+
     <View style={styles.wrap}>
       <Image source={hero} style={{ width:w, height:h, alignSelf:'center', marginBottom:10 }} resizeMode="contain" />
       <Text style={styles.title}>Search rides</Text>
@@ -140,6 +141,20 @@ const errDate = useMemo(() => {
               label={loading ? 'Searching…' : 'Search'}
               onPress={() => { if (!loading) onSearch(); }}
             />
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
+            <View style={{ flex: 1, marginRight: 4 }}>
+              <Boton
+                label="View All"
+                onPress={() => navigation.navigate('ViewAllTrips')}
+              />
+            </View>
+            <View style={{ flex: 1, marginLeft: 4 }}>
+              <Boton
+                label="Adv. Search"
+                onPress={() => navigation.navigate('AdvanceSearch')}
+              />
+            </View>
           </View>
         </>
       )}

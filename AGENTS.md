@@ -5,6 +5,7 @@
 - Usa componentes reutilizables y tipados estrictos.
 - Prefiere funciones puras y hooks para lógica de estado.
 - Mantén los estilos en línea o en objetos StyleSheet.
+- El proyecto es siempre en idioma ingles, debes poner los textos siempre en ingles.
 
 ## Antipatrones
 - No dupliques lógica de validación en varios componentes.

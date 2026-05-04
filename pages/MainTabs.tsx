@@ -19,6 +19,8 @@ import TravelHistoryDriver from './TravelHistoryDriver';
 import MyWallet from './MyWallet';
 import TripManager from './TripManager';
 import TripPax from './TripPax';
+import AdvanceSearch from './AdvanceSearch';
+import AdvSearchResult from './AdvSearchResult';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
@@ -37,6 +39,10 @@ function HomeStack() {
       <HomeStackNav.Screen name="TravelHistoryDriver" component={TravelHistoryDriver} />
       <HomeStackNav.Screen name="Notifications" component={Notifications} />
       <HomeStackNav.Screen name="MyWallet" component={MyWallet} />
+      {/* Nueva pantalla para ver todos los viajes */}
+      <HomeStackNav.Screen name="ViewAllTrips" component={require('./ViewAllTrips').default} />
+      <HomeStackNav.Screen name="AdvanceSearch" component={AdvanceSearch} />
+      <HomeStackNav.Screen name="AdvSearchResult" component={require('./AdvSearchResult').default} />
     </HomeStackNav.Navigator>
   );
 }

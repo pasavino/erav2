@@ -4,19 +4,22 @@ interface Props {
   label: string;
   onPress?: () => void;
   onLongPress?: () => void;
+  disabled?: boolean;
 }
 
-export default function Boton({ label, onPress, onLongPress }: Props) {
+export default function Boton({ label, onPress, onLongPress, disabled }: Props) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.button,
-        pressed && styles.buttonPressed
+        pressed && !disabled && styles.buttonPressed,
+        disabled && styles.buttonDisabled,
       ]}
-      onPress={onPress}
-      onLongPress={onLongPress}
+      onPress={disabled ? undefined : onPress}
+      onLongPress={disabled ? undefined : onLongPress}
+      disabled={disabled}
     >
-      <Text style={styles.text}>{label}</Text>
+      <Text style={[styles.text, disabled && styles.textDisabled]}>{label}</Text>
     </Pressable>
   );
 }
@@ -40,9 +43,16 @@ const styles = StyleSheet.create({
     opacity: 0.8,
     transform: [{ scale: 0.98 }]
   },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+    elevation: 0,
+  },
   text: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600'
+  },
+  textDisabled: {
+    color: '#999',
   }
 });
