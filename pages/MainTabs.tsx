@@ -21,6 +21,7 @@ import TripManager from './TripManager';
 import TripPax from './TripPax';
 import AdvanceSearch from './AdvanceSearch';
 import AdvSearchResult from './AdvSearchResult';
+import MyWalletLog from './MyWalletLog';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
@@ -43,6 +44,7 @@ function HomeStack() {
       <HomeStackNav.Screen name="ViewAllTrips" component={require('./ViewAllTrips').default} />
       <HomeStackNav.Screen name="AdvanceSearch" component={AdvanceSearch} />
       <HomeStackNav.Screen name="AdvSearchResult" component={require('./AdvSearchResult').default} />
+      <HomeStackNav.Screen name="MyWalletLog" component={require('./MyWalletLog').default} />
     </HomeStackNav.Navigator>
   );
 }
@@ -79,6 +81,11 @@ function ProfileStack() {
         name="MyWallet"
         component={MyWallet}
         options={{ title: 'My Wallet' }}
+      />
+      <ProfileStackNav.Screen
+        name="MyWalletLog"
+        component={require('./MyWalletLog').default}
+        options={{ headerShown: false }}
       />
       <ProfileStackNav.Screen
         name="TravelHistory"             

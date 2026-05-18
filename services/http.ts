@@ -54,8 +54,8 @@ const isFilePart = (v: any): v is FilePart => !!v && typeof v === 'object' &&
 
 // === Form-POST (application/x-www-form-urlencoded o multipart si hay archivo) ===
 export async function requestForm<T>(endpoint: string, data: Record<string, any>): Promise<ApiResponse<T>> {
-  console.log('[DEBUG] Requesting endpoint:', endpoint);
-  console.log('[DEBUG] With data:', JSON.stringify(data, null, 2));
+  // console.log('[DEBUG] Requesting endpoint:', endpoint);
+  // console.log('[DEBUG] With data:', JSON.stringify(data, null, 2));
 
   const url = `${BASE_URL}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
   const token = AUTH_TOKEN || null;
@@ -97,7 +97,7 @@ export async function requestForm<T>(endpoint: string, data: Record<string, any>
   try {
     const res = await fetch(url, { method: 'POST', headers, body });
     const text = await res.text();
-    console.log('[DEBUG] Raw response:', text);
+    // console.log('[DEBUG] Raw response:', text);
 
     let json: any = {};
     try {
@@ -107,7 +107,7 @@ export async function requestForm<T>(endpoint: string, data: Record<string, any>
       throw new Error(`Respuesta no-JSON (${res.status}): ${text.slice(0, 120)}`);
     }
     
-    console.log('[DEBUG] Parsed JSON response:', json);
+    // console.log('[DEBUG] Parsed JSON response:', json);
 
     if (!res.ok) {
       console.error('[DEBUG] HTTP Error:', res.status, json?.msg);

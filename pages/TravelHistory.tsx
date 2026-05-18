@@ -22,6 +22,7 @@ type TripRow = {
   NomDriver: string;
   CntAcientos: number;
   CntValijas: number;
+  MedidaValija:string;
   FromTo: string;
   PrecioViaje: number;
   PrecioValija: number;
@@ -174,8 +175,9 @@ export default function HistoryTrip() {
                 <Text style={styles.subtitle}>{item.FechaViaje} • {item.HoraViaje}</Text>
                 <Text style={styles.subtitle}>Driver: {String(item.NomDriver ?? '').trim()}</Text>
                 <Text style={styles.subtitle}>
-                  Seats: {item.CntAcientos} • Bags: {item.CntValijas} • Total: {naira(item.Total)}
+                  Seats: {item.CntAcientos} • Bags: {item.CntValijas} • Bag size: {String(item.MedidaValija ?? '').trim()}
                 </Text>
+                <Text style={styles.total}>Total: {naira(item.Total)}</Text>
               </View>
               <TouchableOpacity
                 onPress={() => askDelete(item)}
@@ -288,6 +290,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   name: { fontSize: 16, fontWeight: '600', color: '#111827' },
+  total: { fontSize: 16, fontWeight: '600', color: '#111827' },
   subtitle: { color: '#6b7280', marginTop: 2 },
   muted: { color: '#6b7280' },
   separator: { height: 6 },

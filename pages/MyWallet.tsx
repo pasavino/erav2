@@ -12,7 +12,7 @@ import {
   Platform,
   type KeyboardTypeOptions,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -72,6 +72,7 @@ const naira = (v: any) => {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const MyWallet: React.FC = () => {
+  const navigation = useNavigation<any>();
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
@@ -141,11 +142,11 @@ const MyWallet: React.FC = () => {
   );
 
   const handleViewTravelerHistory = () => {
-    // TODO
+    navigation.navigate('MyWalletLog', { logType: 'P' });
   };
 
   const handleViewDriverHistory = () => {
-    // TODO
+    navigation.navigate('MyWalletLog', { logType: 'D' });
   };
 
   const handleTransferToPassengerWallet = () => {

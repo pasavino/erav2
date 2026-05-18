@@ -5,6 +5,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
 import Boton from '../components/boton2';
 import AppModal from '../components/appModal';
+import Options from '../components/option'; // Importar el nuevo componente
 import { requestForm } from '../services/http';
 
 // Tipado básico de preferencias
@@ -103,6 +104,9 @@ export default function BookTrip() {
   const [sending, setSending] = useState(false);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [alertVariant, setAlertVariant] = useState<'success' | 'error' | 'warning'>('warning');
+  const [baggageSize, setBaggageSize] = useState<string | null>(null); // NUEVO: Estado para tamaño de equipaje
+
+  const baggageOptions = ['Small', 'Medium', 'Large']; // NUEVO: Opciones de equipaje
 
   // Ajustar contador si cambia max
   useEffect(() => {
@@ -147,6 +151,13 @@ export default function BookTrip() {
     const Cant = Number(count);
     const CantValijas = maxBags > 0 ? Number(bagsCount) : 0;
 
+    // NUEVO: Validar que se haya seleccionado un tamaño si hay valijas
+    if (CantValijas > 0 && !baggageSize) {
+      setAlertMsg('Please select a baggage size');
+      setAlertVariant('warning');
+      return;
+    }
+
     try {
       setSending(true);
       // Llamada real al backend
@@ -154,6 +165,7 @@ export default function BookTrip() {
         idregistro,
         Cant,
         CantValijas,
+        BaggageSize: baggageSize, // NUEVO: Enviar tamaño de equipaje
       });
 
       const ok = res?.error === 0 || res?.ok === 1 || res?.success === 1 || res === 1;
@@ -264,22 +276,14 @@ export default function BookTrip() {
 
         {/* NUEVO: Stepper Equipaje (solo si hay CupoBaggs > 0) */}
         {maxBags > 0 && (
-          <View style={[styles.stepperWrap, { marginTop: -20 }]}> 
+          <View style={styles.stepperWrap}>
             <Text style={styles.stepperLabel}>Baggage</Text>
             <View style={styles.stepper}>
-              <TouchableOpacity
-                onPress={decBags}
-                disabled={bagsCount <= 0}
-                style={[styles.stepBtn, bagsCount <= 0 && styles.stepBtnDisabled, { marginRight: 12 }]}
-              >
+              <TouchableOpacity onPress={decBags} disabled={actionDisabled || bagsCount <= 0} style={[styles.stepBtn, (actionDisabled || bagsCount <= 0) && styles.stepBtnDisabled, { marginRight: 12 }]}>
                 <Text style={styles.stepBtnText}>−</Text>
               </TouchableOpacity>
               <Text style={[styles.stepValue, { marginHorizontal: 12 }]}>{String(bagsCount)}</Text>
-              <TouchableOpacity
-                onPress={incBags}
-                disabled={bagsCount >= maxBags}
-                style={[styles.stepBtn, bagsCount >= maxBags && styles.stepBtnDisabled, { marginLeft: 12 }]}
-              >
+              <TouchableOpacity onPress={incBags} disabled={actionDisabled || bagsCount >= maxBags} style={[styles.stepBtn, (actionDisabled || bagsCount >= maxBags) && styles.stepBtnDisabled, { marginLeft: 12 }]}>
                 <Text style={styles.stepBtnText}>+</Text>
               </TouchableOpacity>
             </View>
@@ -287,9 +291,20 @@ export default function BookTrip() {
           </View>
         )}
 
+        {/* NUEVO: Selector de tamaño de equipaje */}
+        {bagsCount > 0 && (
+          <View>
+            <Options
+              options={baggageOptions}
+              selectedOption={baggageSize}
+              onSelect={setBaggageSize}
+            />
+          </View>
+        )}
+
         {/* Total */}
-        <View style={styles.totalBox}>
-          <Text style={styles.totalLabel}>Total amount</Text>
+        <View style={styles.totalRow}>
+          <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>{naira(totalAmount)}</Text>
         </View>
 
@@ -358,6 +373,15 @@ const styles = StyleSheet.create({
   stepBtnText: { fontSize: 20, fontWeight: '700' },
   stepValue: { width: 40, textAlign: 'center', fontSize: 16, fontWeight: '700' },
   stepperNote: { marginTop: 4, fontSize: 12, color: '#666' },
+  totalRow: {
+    marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
   totalBox: {
     marginTop: -10,
     marginBottom: 16,

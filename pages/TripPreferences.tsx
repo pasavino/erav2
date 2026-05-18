@@ -253,13 +253,12 @@ export default function TripPreferences() {
             placeholder="0.00"
             // Usamos phone-pad porque ya funciona en otras pantallas del proyecto (numérico estable en Android/iOS)
             keyboardType="phone-pad"
-            maxlenght={9}
+            maxLength={9}
             onBlur={() => {
               setValijasPrecioText(prev => normalizePriceText((prev || '').trim()));
               setTouched(v => ({ ...v, Valijas_precio: true }));
             }}
             error={errPrecio}
-            errorMode="bubble"
           />
         </View>
       </Row>

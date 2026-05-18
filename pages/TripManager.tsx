@@ -69,11 +69,11 @@ export default function TripManager() {
       const res = await rides.list();
       const list = res.lista || [];
       // Log estados de los viajes
-      console.log('Estados de viajes:', list.map(t => ({ id: t.IdViaje, estado: t.Estado })));
+      // console.log('Estados de viajes:', list.map(t => ({ id: t.IdViaje, estado: t.Estado })));
       setTrips(list);
 
       const activeFromBackend = computeActiveId(list);
-      console.log('activeId calculado:', activeFromBackend);
+      // console.log('activeId calculado:', activeFromBackend);
       if (activeFromBackend) {
         await syncActiveId(activeFromBackend);
       } else {
@@ -105,7 +105,7 @@ export default function TripManager() {
 
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      console.log('Coordenadas enviadas al iniciar viaje:', coords);
+      // console.log('Coordenadas enviadas al iniciar viaje:', coords);
 
       // Optimistic UI: marcar el viaje como activo inmediatamente para que el botón cambie a "Finish"
       setActiveId(rideId);
@@ -163,7 +163,7 @@ export default function TripManager() {
       }
       const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Highest });
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      console.log('Coordenadas enviadas al finalizar viaje:', coords);
+      // console.log('Coordenadas enviadas al finalizar viaje:', coords);
 
       const res = await rides.finish(closingId, coords, 1);
       if (!res || res.error !== 0) {
@@ -245,7 +245,7 @@ export default function TripManager() {
     const pax = item.Pax ?? 0;
     const isTraveling = item.Estado === 4;
     // Log para depuración
-    console.log(`renderItem: id=${id}, estado=${item.Estado}, hasActive=${hasActive}, canStart=${canStart}, canFinish=${canFinish}`);
+    //console.log(`renderItem: id=${id}, estado=${item.Estado}, hasActive=${hasActive}, canStart=${canStart}, canFinish=${canFinish}`);
 
     return (
       <View style={styles.card}>
