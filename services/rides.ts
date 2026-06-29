@@ -35,11 +35,12 @@ export const rides = {
     }),
 
   // finalizar un viaje activo
-  finish: (rideId: string, coords?: { lat: number; lng: number }, tipofin: number = 1) =>
+  finish: (rideId: string, coords?: { lat: number; lng: number }, tipofin: number = 1, reason?: string) =>
     requestForm('/ax_finish_ride.php', {
       idviaje: rideId,
       ...(coords ? { lat: String(coords.lat), lng: String(coords.lng) } : {}),
       tipofin,
+      ...(reason ? { reason } : {}),
     }),
 
   // Obtener lista de pasajeros para un viaje

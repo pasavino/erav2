@@ -17,6 +17,8 @@ import * as Location from 'expo-location';
 import { rides } from '../services/rides';
 import type { Ride } from '../services/rides';
 import AppModal from '../components/appModal';
+import AppModalInput from '../components/appModalInput';
+import Input from '../components/input';
 
 /**
  * Screen para iniciar/finalizar viajes.
@@ -38,6 +40,8 @@ export default function TripManager() {
     type: 'start' | 'finish';
     ride: Ride;
   } | null>(null);
+
+  const [forceEndReason, setForceEndReason] = useState('');
 
   const getId = (ride: Ride) => String(ride.IdViaje);
   const computeActiveId = (list: Ride[]) => {
@@ -209,7 +213,11 @@ export default function TripManager() {
   const [forceEndWorking, setForceEndWorking] = useState<boolean>(false);
   const [forceEndConfirmation, setForceEndConfirmation] = useState<{ rideId: string } | null>(null);
 
-  const handleForceEnd = async (rideId: string) => {
+  const handleForceEnd = async (rideId: string, reason: string) => {
+    if (!reason) {
+      setErrorMsg('The reason for forcing the end of the trip is required');
+      return;
+    }
     setForceEndWorking(true);
     try {
       // Obtener ubicación actual
@@ -221,7 +229,7 @@ export default function TripManager() {
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       
 
-      const res = await rides.finish(rideId, coords, 2);
+      const res = await rides.finish(rideId, coords, 2, reason);
       if (!res || res.error !== 0) {
         const msg = res?.msg || 'Could not force end trip';
         setErrorMsg(msg);
@@ -233,6 +241,7 @@ export default function TripManager() {
     } finally {
       setForceEndWorking(false);
       setForceEndConfirmation(null);
+      setForceEndReason('');
     }
   };
 
@@ -365,20 +374,36 @@ export default function TripManager() {
       />
 
       {/* Modal de confirmación Force End */}
-      <AppModal
+      <AppModalInput
         visible={!!forceEndConfirmation}
         title="Force End Trip?"
         message="Forcing the termination of the trip means that the passenger will be refunded. Are you sure you want to force end this trip?"
-        onClose={() => setForceEndConfirmation(null)}
+        onClose={() => {
+          setForceEndConfirmation(null);
+          setForceEndReason('');
+        }}
         actions={forceEndConfirmation ? [
-          { label: 'No', onPress: () => setForceEndConfirmation(null), variant: 'ghost' },
+          { label: 'No', onPress: () => {
+            setForceEndConfirmation(null);
+            setForceEndReason('');
+          }, variant: 'ghost' },
           {
-            label: 'Yes',
-            onPress: () => handleForceEnd(forceEndConfirmation.rideId),
+            label: 'Yes, Force End',
+            onPress: () => handleForceEnd(forceEndConfirmation.rideId, forceEndReason),
             variant: 'danger',
             loading: forceEndWorking,
+            disabled: !forceEndReason.trim(),
           },
         ] : []}
+        inputProps={{
+          placeholder: "Reason for termination",
+          value: forceEndReason,
+          onChangeText: setForceEndReason,
+          multiline: true,
+          numberOfLines: 3,
+          maxLength: 250,
+          style: { textAlignVertical: 'top', minHeight: 80 }
+        }}
       />
 
       <AppModal

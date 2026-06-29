@@ -1,4 +1,4 @@
-// /components/appModal.tsx
+// components/appModalInput.tsx
 import React from 'react';
 import {
   Modal,
@@ -7,33 +7,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { ModalAction, AppModalProps } from './appModal'; // Reutilizamos los tipos
+import Input from './input';
 
-export type ModalAction = {
-  label: string;
-  onPress: () => void;
-  variant?: 'default' | 'danger' | 'ghost';
-  disabled?: boolean;
-  loading?: boolean;
-  testID?: string;
-};
-
-export type AppModalProps = {
-  visible: boolean;
-  title?: string;
-  message?: string | React.ReactNode;
-  onClose: () => void;
-  iconName?: keyof typeof Ionicons.glyphMap; // defaults by variant
-  variant?: 'info' | 'warning' | 'error';
-  /**
-   * Actions to render.
-   * - undefined: default single OK button that calls onClose
-   * - []: renders no actions
-   */
-  actions?: ModalAction[];
-  // UX
-  backdropClose?: boolean; // close when pressing outside (not implemented here for safety)
+// Extendemos las props para incluir las del input
+export type AppModalInputProps = AppModalProps & {
+  inputProps: React.ComponentProps<typeof Input>;
 };
 
 const VARIANT_COLOR: Record<NonNullable<AppModalProps['variant']>, string> = {
@@ -48,7 +30,7 @@ const DEFAULT_ICON: Record<NonNullable<AppModalProps['variant']>, keyof typeof I
   error: 'alert-circle',
 };
 
-export default function AppModal({
+export default function AppModalInput({
   visible,
   title,
   message,
@@ -56,7 +38,8 @@ export default function AppModal({
   iconName,
   variant = 'warning',
   actions,
-}: AppModalProps) {
+  inputProps,
+}: AppModalInputProps) {
   const color = VARIANT_COLOR[variant];
   const ico = iconName ?? DEFAULT_ICON[variant];
 
@@ -71,6 +54,11 @@ export default function AppModal({
           {title ? <Text style={styles.title}>{title}</Text> : null}
           {typeof message === 'string' ? <Text style={styles.msg}>{message}</Text> : message}
 
+          <View style={{ width: '100%', marginTop: 12 }}>
+            <Input {...inputProps} />
+          </View>
+
+          {/* Actions */}
           {finalActions.length ? (
             <View style={styles.actionsRow}>
               {finalActions.map((a, idx) => (
