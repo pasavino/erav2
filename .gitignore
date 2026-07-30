@@ -40,3 +40,4 @@ android/app/era.keystore
 android/keystore.properties
 dist/
 release
+*.aab
