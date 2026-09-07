@@ -2,11 +2,9 @@
 
 ## Objetivo
 
-Este archivo define las reglas obligatorias para cualquier agente de código que trabaje sobre Era V2.
+Estas reglas son obligatorias para cualquier agente que trabaje sobre Era V2.
 
-El agente debe actuar de forma conservadora.
-
-Su objetivo es implementar únicamente lo solicitado, preservando todo el comportamiento existente que no forme parte explícita de la tarea.
+El agente trabaja exclusivamente sobre la aplicación React Native / Expo.
 
 La prioridad principal es:
 
@@ -14,109 +12,107 @@ La prioridad principal es:
 
 ---
 
+# ALCANCE DEL AGENTE
+
+El agente puede trabajar únicamente sobre la aplicación:
+
+* React Native
+* TypeScript
+* Expo
+* componentes
+* pantallas
+* navegación
+* contextos
+* hooks
+* servicios utilizados por la aplicación
+* lógica frontend
+* validaciones frontend
+* estilos
+
+El agente NO trabaja sobre:
+
+* PHP
+* backend
+* APIs PHP
+* servidor
+* MySQL
+* Stored Procedures
+* base de datos
+* infraestructura
+
+Backend y base de datos son administrados exclusivamente por el equipo.
+
+---
+
 # REGLAS CRÍTICAS
 
-Estas reglas tienen prioridad sobre cualquier otra instrucción de este archivo.
+## Cambios mínimos
 
-## 1. Cambios mínimos
-
-* Modifica únicamente lo necesario para cumplir la tarea solicitada.
-* No refactorices código que no esté directamente relacionado con la tarea.
-* No reorganices archivos por preferencias personales.
-* No cambies arquitectura existente si no se solicita explícitamente.
-* No cambies nombres de variables, funciones, componentes, archivos, endpoints o propiedades JSON sin necesidad.
+* Modifica únicamente lo necesario para cumplir la tarea.
+* No refactorices código no relacionado.
+* No cambies arquitectura existente salvo solicitud explícita.
 * No elimines funcionalidades existentes.
 * No cambies comportamiento existente que no forme parte de la tarea.
-* No simplifiques código existente si eso puede alterar su comportamiento.
-* No reemplaces una implementación funcional por otra solamente porque parezca más moderna.
+* No cambies nombres de variables, funciones, componentes o archivos sin necesidad.
 * No hagas mejoras adicionales que no fueron solicitadas.
-
-Si existe una solución funcionando, modificarla mínimamente.
-
----
-
-## 2. No romper funcionalidad existente
-
-Antes de modificar un archivo:
-
-1. Revisa el código existente.
-2. Entiende cómo funciona actualmente.
-3. Identifica qué partes dependen de lo que vas a modificar.
-4. Cambia solamente lo necesario.
-5. Conserva el resto del comportamiento exactamente como estaba.
-
-Si una modificación puede afectar funcionalidades existentes, debes evitarla o limitarla al mínimo imprescindible.
-
-Nunca asumir que una parte del código puede eliminarse simplemente porque aparentemente no se utiliza.
-
----
-
-## 3. No eliminar comentarios
-
+* No reemplaces código funcional solamente porque exista una forma más moderna.
 * No elimines comentarios existentes.
-* No reemplaces comentarios del desarrollador.
-* No traduzcas comentarios existentes.
-* No reorganices comentarios innecesariamente.
 
-Los comentarios existentes forman parte de la documentación del proyecto.
+Si algo funciona y no forma parte de la tarea:
 
-Puedes agregar comentarios nuevos cuando sean realmente útiles.
+**NO LO CAMBIES.**
 
 ---
 
-# TERMINAL, BASH Y COMANDOS
+# ACCESO A ARCHIVOS
 
-## Prohibido ejecutar comandos
+El agente está autorizado a:
 
-El agente NO debe ejecutar ningún comando de terminal, shell, Bash o sistema operativo.
+* leer archivos de la aplicación;
+* buscar archivos;
+* buscar referencias dentro del código;
+* inspeccionar la estructura de la aplicación;
+* localizar componentes, hooks, contextos y servicios;
+* crear archivos frontend cuando sean necesarios;
+* modificar archivos frontend cuando sean necesarios.
 
-Esto es una regla absoluta.
+Debe analizar primero el código existente antes de modificarlo.
+
+---
+
+# EJECUCIÓN DE COMANDOS
+
+El agente NO debe ejecutar la aplicación ni comandos del sistema.
+
+No debe:
+
+* iniciar Expo;
+* iniciar Metro;
+* ejecutar Android;
+* compilar APK o AAB;
+* ejecutar builds;
+* ejecutar Gradle;
+* instalar dependencias;
+* actualizar dependencias;
+* ejecutar tests;
+* ejecutar linters;
+* ejecutar formatters;
+* ejecutar Expo Doctor;
+* ejecutar scripts;
+* ejecutar PHP;
+* ejecutar MySQL;
+* ejecutar SQL;
+* realizar operaciones Git;
+* hacer commits;
+* hacer push;
+* hacer pull;
+* modificar permisos del sistema.
 
 No ejecutar, entre otros:
 
 ```text
-bash
-sh
-zsh
-
-npm
-npx
-yarn
-pnpm
-
-expo
-expo-doctor
-
-gradle
-gradlew
-
-adb
-
-php
-composer
-
-mysql
-mysqldump
-
-git
-
-rm
-cp
-mv
-chmod
-chown
-mkdir
-
-curl
-wget
-```
-
-Tampoco ejecutar scripts existentes del proyecto.
-
-Por ejemplo, NO ejecutar:
-
-```text
 npm install
+npm update
 npm start
 npm run android
 
@@ -126,180 +122,166 @@ npx expo install
 npx expo-doctor
 npx expo prebuild
 
+gradle
 ./gradlew
-./gradlew assembleRelease
+
+adb
+
+php
+composer
+
+mysql
+mysqldump
+
+git commit
+git push
+git pull
 
 sh scripts/build_apk.sh
 ```
 
----
-
-## El equipo ejecuta los comandos
-
-La instalación de dependencias, ejecución, compilación y pruebas las realiza manualmente el equipo.
-
-El agente puede indicar al finalizar que sería conveniente ejecutar determinado comando, pero:
-
-**NO debe ejecutarlo.**
+El equipo ejecuta, prueba y compila la aplicación.
 
 ---
 
-## No ejecutar la aplicación
+## COMANDOS DE LECTURA PERMITIDOS
+
+El agente puede utilizar comandos únicamente para **leer o buscar información dentro del proyecto**, siempre que no modifiquen archivos ni ejecuten la aplicación.
+
+Están permitidos comandos de solo lectura como:
+
+```bash
+ls
+find
+pwd
+cat
+head
+tail
+less
+sed -n
+grep
+rg
+wc
+stat
+file
+```
+
+También puede usar combinaciones de solo lectura, por ejemplo:
+
+```bash
+find . -name "*.tsx"
+rg "Profile" .
+grep -R "Change password" .
+sed -n '1,220p' pages/Profile.tsx
+head -n 100 archivo.tsx
+tail -n 100 archivo.tsx
+```
+
+Estos comandos se pueden usar únicamente para:
+
+* listar archivos y carpetas;
+* localizar archivos;
+* leer contenido;
+* buscar texto;
+* buscar referencias;
+* inspeccionar estructura del proyecto;
+* conocer metadata básica de archivos.
+
+## PROHIBIDO MODIFICAR MEDIANTE TERMINAL
+
+No utilizar comandos que creen, modifiquen, muevan o eliminen archivos.
+
+Por ejemplo, están prohibidos:
+
+```bash
+rm
+mv
+cp
+touch
+mkdir
+chmod
+chown
+truncate
+tee
+echo > archivo
+cat > archivo
+sed -i
+perl -pi
+```
+
+La edición de código debe realizarse utilizando las herramientas de edición de archivos proporcionadas por el entorno de Codex, no mediante comandos shell.
+
+## REGLA
+
+**Terminal para leer y buscar: permitido.**
+
+**Terminal para modificar, ejecutar, compilar, instalar o administrar: prohibido.**
+
+
+# BACKEND
+
+El backend es administrado exclusivamente por el equipo.
 
 El agente NO debe:
 
-* iniciar Expo;
-* iniciar Metro;
-* abrir emuladores;
-* ejecutar Android;
-* compilar APK;
-* compilar AAB;
-* ejecutar builds;
-* ejecutar tests;
-* ejecutar linters;
-* ejecutar formatters;
-* ejecutar Expo Doctor;
-* ejecutar Gradle;
-* ejecutar scripts del proyecto.
+* crear archivos PHP;
+* modificar archivos PHP;
+* eliminar archivos PHP;
+* crear endpoints;
+* modificar endpoints;
+* inventar endpoints;
+* modificar contratos del backend;
+* modificar lógica del servidor.
 
-La validación de ejecución la realiza el equipo.
+Si una funcionalidad frontend necesita un endpoint que no existe:
+
+1. Implementar la parte frontend hasta donde sea posible.
+2. Indicar claramente qué necesita del backend.
+3. No implementar el backend.
 
 ---
 
 # BASE DE DATOS
 
-## La base de datos la administra exclusivamente el equipo
+La base de datos es administrada exclusivamente por el equipo.
 
-El agente NO debe modificar la base de datos.
+El agente NO debe:
 
-Esto incluye MySQL y cualquier archivo relacionado con modificaciones de estructura o lógica de base de datos.
+* conectarse a MySQL;
+* ejecutar SQL;
+* crear tablas;
+* modificar tablas;
+* crear columnas;
+* modificar columnas;
+* crear índices;
+* modificar índices;
+* crear Stored Procedures;
+* modificar Stored Procedures;
+* crear triggers;
+* modificar triggers;
+* crear funciones MySQL;
+* crear vistas;
+* crear migraciones;
+* crear scripts SQL.
 
-Está prohibido crear, modificar o eliminar:
+Si una funcionalidad necesita cambios de base de datos:
 
-* bases de datos;
-* tablas;
-* columnas;
-* índices;
-* claves;
-* constraints;
-* Stored Procedures;
-* funciones MySQL;
-* triggers;
-* eventos MySQL;
-* vistas;
-* migraciones;
-* scripts SQL.
-
----
-
-## No ejecutar SQL
-
-El agente NO debe conectarse a MySQL.
-
-El agente NO debe ejecutar:
-
-```text
-SELECT
-INSERT
-UPDATE
-DELETE
-ALTER
-CREATE
-DROP
-CALL
-```
-
-ni ninguna otra consulta contra la base de datos.
+**Debe indicarlo al equipo y detenerse ahí.**
 
 ---
 
-## Stored Procedures
+# STACK FRONTEND
 
-Los Stored Procedures los administra manualmente el equipo.
-
-El agente:
-
-* NO debe crear Stored Procedures;
-* NO debe modificar Stored Procedures;
-* NO debe eliminar Stored Procedures;
-* NO debe ejecutar Stored Procedures;
-* NO debe generar migraciones para ellos.
-
-Si una funcionalidad necesita un cambio de base de datos, el agente debe explicar qué necesita del backend o de MySQL.
-
-El equipo implementará manualmente esa parte.
-
----
-
-## No asumir cambios de base de datos
-
-Nunca modificar la aplicación suponiendo que se agregará automáticamente:
-
-* una columna;
-* una tabla;
-* un procedimiento;
-* un parámetro;
-* una vista;
-* un trigger.
-
-Si falta algo del lado de MySQL, indicarlo claramente al finalizar.
-
----
-
-# ARCHIVOS
-
-## Modificación de archivos
-
-El agente puede modificar archivos de código necesarios para implementar la tarea.
-
-Debe limitarse estrictamente a los archivos relacionados.
-
----
-
-## No eliminar archivos
-
-No eliminar archivos salvo que se solicite explícitamente.
-
-No mover archivos salvo que se solicite explícitamente.
-
-No renombrar archivos salvo que sea imprescindible para la tarea o se solicite expresamente.
-
----
-
-## No modificar archivos innecesarios
-
-No modificar archivos solamente para:
-
-* ordenar imports;
-* cambiar formato;
-* aplicar prettier;
-* cambiar indentación;
-* cambiar comillas;
-* reorganizar propiedades;
-* cambiar nombres;
-* limpiar código;
-* modernizar sintaxis.
-
-Si un archivo no necesita cambiar para implementar la tarea, no modificarlo.
-
----
-
-# STACK DEL PROYECTO
-
-Era V2 utiliza principalmente:
+La aplicación utiliza:
 
 * React Native
 * TypeScript
 * Expo
 * Expo SDK 54
-* PHP 8
-* MySQL 8
 
 ---
 
 # EXPO
-
-## Versión
 
 Actualmente el proyecto utiliza:
 
@@ -307,17 +289,16 @@ Actualmente el proyecto utiliza:
 Expo SDK 54
 ```
 
-No actualizar Expo SDK.
+No actualizar:
 
-No actualizar React Native.
+* Expo SDK;
+* React Native;
+* dependencias;
+* Gradle;
+* Kotlin;
+* Android Gradle Plugin;
 
-No cambiar versiones de Expo.
-
-No actualizar dependencias automáticamente.
-
----
-
-## Proyecto Android existente
+salvo solicitud explícita.
 
 El proyecto contiene:
 
@@ -325,98 +306,54 @@ El proyecto contiene:
 /android
 ```
 
-La carpeta Android contiene configuraciones y modificaciones que deben preservarse.
+Esta carpeta contiene configuración nativa que debe preservarse.
 
-NO ejecutar:
+No ejecutar:
 
 ```text
 npx expo prebuild
 npx expo prebuild --clean
 ```
 
-No regenerar Android.
+No eliminar ni regenerar `/android`.
 
-No eliminar `/android`.
-
----
-
-## Archivos nativos
-
-No modificar archivos nativos salvo que la tarea lo requiera explícitamente.
-
-Especial cuidado con:
-
-```text
-android/
-AndroidManifest.xml
-gradle.properties
-build.gradle
-settings.gradle
-gradle/
-```
-
-No actualizar:
-
-* Gradle;
-* Android Gradle Plugin;
-* Kotlin;
-* compileSdk;
-* targetSdk;
-* buildTools;
-* Java;
-
-salvo solicitud explícita.
+No modificar archivos nativos salvo que la tarea lo solicite expresamente.
 
 ---
 
 # DEPENDENCIAS
 
-## No instalar dependencias
-
-El agente NO debe instalar paquetes.
-
-No agregar nuevas dependencias sin autorización explícita.
-
-No actualizar dependencias existentes por iniciativa propia.
-
-No modificar versiones solamente porque exista una versión más nueva.
+* No instalar dependencias.
+* No actualizar dependencias.
+* No agregar paquetes nuevos sin autorización explícita.
+* No modificar versiones en `package.json` sin autorización.
+* Reutilizar las dependencias existentes siempre que sea posible.
 
 ---
 
-## package.json
+# TYPESCRIPT
 
-No modificar dependencias en `package.json` salvo que la tarea lo requiera expresamente.
-
-Si una solución puede realizarse utilizando las dependencias existentes, usar las existentes.
-
----
-
-# REACT NATIVE Y TYPESCRIPT
-
-## TypeScript
-
-* Usa TypeScript.
-* Mantén tipado estricto.
-* Evita `any`.
-* No uses `@ts-ignore` para ocultar errores.
-* No desactives reglas TypeScript para evitar corregir un problema.
-* Reutiliza types e interfaces existentes cuando sea posible.
-* No crees tipos duplicados.
+* Usar TypeScript.
+* Mantener tipado estricto.
+* Evitar `any`.
+* No usar `@ts-ignore` para ocultar errores.
+* Reutilizar interfaces y types existentes.
+* No crear tipos duplicados innecesariamente.
 
 ---
 
-## React
+# REACT NATIVE
 
-* Usa componentes funcionales.
-* Usa hooks cuando corresponda.
+* Usar componentes funcionales.
+* Usar hooks cuando corresponda.
 * No modificar estado directamente.
-* Usa setters de React.
-* Evita efectos secundarios innecesarios.
-* Mantén el patrón utilizado actualmente por el proyecto.
+* Usar setters de React.
+* Mantener los patrones existentes del proyecto.
+* No crear abstracciones innecesarias.
 
 ---
 
-# ESTRUCTURA DEL PROYECTO
+# ESTRUCTURA
 
 Los componentes reutilizables están normalmente en:
 
@@ -430,7 +367,7 @@ Las pantallas están normalmente en:
 /pages
 ```
 
-Los servicios de red están normalmente en:
+Los servicios utilizados por la aplicación están normalmente en:
 
 ```text
 /services
@@ -442,35 +379,39 @@ El contexto de autenticación está en:
 /context/Auth.tsx
 ```
 
-Antes de crear algo nuevo, buscar si ya existe una implementación reutilizable.
+Antes de crear algo nuevo:
 
----
-
-# COMPONENTES
-
-## Reutilización
-
-Antes de crear un componente nuevo:
-
-1. Buscar un componente existente equivalente.
-2. Revisar cómo se utiliza en otras pantallas.
+1. Buscar si ya existe.
+2. Revisar cómo se utiliza.
 3. Reutilizarlo cuando sea posible.
 
-No crear componentes duplicados.
+---
+
+# SERVICIOS FRONTEND
+
+El agente puede modificar los servicios frontend únicamente para conectar la aplicación con endpoints que YA EXISTAN.
+
+No debe:
+
+* crear backend;
+* modificar backend;
+* inventar endpoints;
+* asumir parámetros que no estén definidos;
+* cambiar contratos existentes.
+
+Si falta información del endpoint, debe indicarlo al equipo.
 
 ---
 
-## Input
+# FORMULARIOS
 
-Para formularios, utilizar el componente existente:
+Usar el componente existente:
 
 ```text
 Input
 ```
 
-cuando sea apropiado.
-
-Debe mantener compatibilidad con las props utilizadas actualmente.
+cuando corresponda.
 
 Los errores de validación deben utilizar el mecanismo existente mediante:
 
@@ -478,7 +419,7 @@ Los errores de validación deben utilizar el mecanismo existente mediante:
 error
 ```
 
-No crear otro sistema visual de errores si no es necesario.
+No crear otro sistema de validación visual si el existente puede reutilizarse.
 
 ---
 
@@ -490,9 +431,9 @@ Preferir:
 StyleSheet.create()
 ```
 
-Usar estilos inline solamente cuando el valor sea dinámico o realmente sea más claro.
+Usar estilos inline principalmente para valores dinámicos.
 
-No modificar estilos existentes que no estén relacionados con la tarea.
+No modificar estilos no relacionados con la tarea.
 
 No cambiar innecesariamente:
 
@@ -502,140 +443,42 @@ No cambiar innecesariamente:
 * márgenes;
 * padding;
 * bordes;
-* alineaciones;
-* posiciones;
 * iconos;
+* posiciones;
 * layout.
 
-La nueva funcionalidad debe integrarse visualmente con lo existente.
+Las nuevas funcionalidades deben respetar el diseño existente.
 
 ---
 
-# IDIOMA DE LA APLICACIÓN
+# IDIOMA
 
-Los textos visibles para el usuario deben estar en inglés.
+Todos los textos visibles para el usuario deben estar en inglés.
 
 Esto incluye:
 
-* títulos;
 * botones;
+* títulos;
 * labels;
 * placeholders;
 * alerts;
-* validaciones;
-* errores;
+* mensajes de error;
 * mensajes de éxito;
-* textos de navegación.
+* navegación.
 
-No traducir automáticamente código, nombres internos o comentarios existentes.
-
----
-
-# NETWORKING
-
-La lógica de acceso al backend debe seguir los patrones existentes del proyecto.
-
-Los servicios se encuentran normalmente en:
-
-```text
-/services
-```
-
-Antes de crear un nuevo servicio:
-
-1. Revisar servicios existentes.
-2. Buscar si ya existe un endpoint relacionado.
-3. Reutilizar el patrón existente.
-
-No crear una arquitectura nueva de networking.
-
----
-
-# BACKEND PHP
-
-El backend utiliza PHP 8.
-
-El agente puede modificar código PHP únicamente cuando la tarea lo requiera explícitamente.
-
----
-
-## Reglas PHP
-
-* Mantener compatibilidad con PHP 8.
-* Respetar la arquitectura existente.
-* Mantener PDO.
-* Usar prepared statements cuando corresponda.
-* No concatenar entradas del usuario directamente en SQL.
-* No cambiar el sistema de conexión existente sin solicitud explícita.
-* No modificar código PHP no relacionado con la tarea.
-* No cambiar formatos JSON existentes innecesariamente.
-
----
-
-# CONTRATO FRONTEND / BACKEND
-
-Antes de modificar un endpoint o la forma en que el frontend lo consume:
-
-1. Revisar el contrato existente.
-2. Revisar cómo lo utilizan otras pantallas.
-3. Preservar compatibilidad.
-
-No cambiar nombres de propiedades JSON existentes sin necesidad.
-
----
-
-## Convención de respuesta
-
-Era V2 utiliza habitualmente la siguiente convención:
-
-```text
-0 = operación correcta
-distinto de 0 = ocurrió un error
-```
-
-El mensaje normalmente está en:
-
-```text
-msg
-```
-
-No invertir esta lógica.
-
----
-
-## Alerts
-
-Cuando una operación fue exitosa:
-
-No mostrar:
-
-```text
-Error
-```
-
-como título.
-
-Utilizar el título enviado por el backend o por la llamada cuando corresponda.
-
-Si no existe un título específico y la operación fue correcta, utilizar:
-
-```text
-Success
-```
-
-cuando sea coherente con el componente existente.
+Los comentarios existentes deben conservarse.
 
 ---
 
 # AUTENTICACIÓN
 
-El contexto principal de autenticación se encuentra en:
+El contexto principal está en:
 
 ```text
 /context/Auth.tsx
 ```
 
-No crear un sistema paralelo de autenticación.
+No crear otro sistema paralelo de autenticación.
 
 Respetar la lógica existente para:
 
@@ -647,66 +490,43 @@ Respetar la lógica existente para:
 * rol;
 * logout.
 
-Antes de cambiar datos del usuario, revisar cómo se restauran cuando la aplicación inicia o cuando se utiliza autenticación biométrica.
+No modificar autenticación no relacionada con la tarea.
 
 ---
 
 # WALLET Y OPERACIONES FINANCIERAS
 
-Era V2 contiene operaciones financieras críticas.
-
-Entre otras:
+Era V2 contiene funcionalidades relacionadas con:
 
 * wallet del pasajero;
 * wallet del conductor;
-* recarga;
-* compra de viajes;
+* recargas;
+* viajes;
 * cancelaciones;
 * devoluciones;
 * transferencias;
-* acreditaciones;
 * Paystack;
-* logs;
-* ledger de transacciones.
+* logs.
 
----
+No modificar lógica financiera frontend que no forme parte explícita de la tarea.
 
-## Regla de seguridad
-
-No modificar lógica financiera que no forme parte explícita de la tarea.
-
-No alterar:
+No alterar sin autorización:
 
 * cálculos;
-* saldos;
+* saldos mostrados;
 * devoluciones;
 * porcentajes;
 * referencias;
 * estados;
-* acreditaciones;
-* débitos.
+* flujos de pago.
 
-sin instrucciones explícitas.
-
----
-
-## No implementar MySQL
-
-Si una nueva funcionalidad financiera necesita lógica de base de datos:
-
-**NO IMPLEMENTARLA EN MYSQL.**
-
-El agente debe preparar únicamente la parte de aplicación/backend que corresponda y explicar qué necesita de la base de datos.
-
-El equipo implementará esa lógica manualmente.
+La lógica financiera del backend y base de datos no debe ser modificada por el agente.
 
 ---
 
 # PAYSTACK
 
-Paystack forma parte del sistema de pagos de Era V2.
-
-No cambiar su funcionamiento salvo solicitud explícita.
+No modificar la integración Paystack salvo solicitud explícita.
 
 Especial cuidado con:
 
@@ -719,19 +539,13 @@ Especial cuidado con:
 * transferencias;
 * estados de transacción.
 
-No alterar referencias existentes.
-
-No cambiar mecanismos de idempotencia.
-
-No introducir una nueva integración Paystack si ya existe una.
+No modificar backend Paystack.
 
 ---
 
 # VIAJES
 
-Era V2 gestiona diferentes operaciones relacionadas con viajes.
-
-Entre ellas:
+Era V2 maneja:
 
 * creación;
 * reserva;
@@ -747,133 +561,65 @@ Entre ellas:
 * eventos;
 * logs.
 
-No modificar estados ni reglas de negocio existentes salvo que se solicite específicamente.
+No modificar reglas existentes salvo solicitud explícita.
 
 ---
 
 # SEGURIDAD
 
-* No introducir secretos en código.
+* No introducir secretos.
 * No agregar API keys privadas.
 * No registrar contraseñas.
 * No registrar tokens completos.
-* No exponer errores internos de SQL.
-* No exponer stack traces al usuario.
-* No confiar exclusivamente en validaciones frontend.
-* No eliminar validaciones backend existentes.
+* No eliminar validaciones existentes.
+* No guardar información sensible innecesariamente.
 
 ---
 
 # MANEJO DE ERRORES
 
-No ocultar errores.
-
-No agregar `try/catch` vacíos.
-
-No ignorar errores silenciosamente.
-
-Mantener los mecanismos de error existentes.
-
-Los mensajes destinados al usuario deben ser comprensibles.
-
-Los detalles técnicos deben seguir el mecanismo de logs existente.
+* No ocultar errores.
+* No agregar `try/catch` vacíos.
+* No ignorar errores silenciosamente.
+* Mantener los mecanismos existentes.
+* Mostrar mensajes comprensibles al usuario.
 
 ---
 
-# ANTÍPATRONES
-
-Evitar:
-
-* refactorización innecesaria;
-* cambiar código no relacionado;
-* crear componentes duplicados;
-* crear servicios duplicados;
-* agregar dependencias innecesarias;
-* cambiar arquitectura;
-* modificar estilos no relacionados;
-* borrar comentarios;
-* cambiar contratos JSON existentes;
-* cambiar nombres porque parezcan mejores;
-* reemplazar código funcional sin necesidad;
-* alterar lógica financiera incidentalmente;
-* alterar autenticación incidentalmente;
-* modificar configuración Android incidentalmente;
-* modificar la base de datos;
-* ejecutar comandos del sistema.
-
----
-
-# CUANDO FALTA ALGO
-
-Si para completar una tarea se necesita algo que el agente no debe modificar, por ejemplo:
-
-* Stored Procedure;
-* cambio MySQL;
-* nueva tabla;
-* nueva columna;
-* configuración del servidor;
-* ejecución de comandos;
-* compilación;
-* instalación de paquetes;
-
-el agente debe:
-
-1. Implementar hasta donde sea posible sin violar estas reglas.
-2. Explicar claramente qué falta.
-3. Indicar qué necesita hacer manualmente el equipo.
-4. No inventar que esa parte ya existe.
-5. No ejecutar esa parte por su cuenta.
-
----
-
-# FORMA DE TRABAJAR
+# FORMA DE TRABAJO
 
 Para cada tarea:
 
-1. Analizar primero el código existente relacionado.
-2. Buscar componentes y servicios reutilizables.
+1. Leer y analizar primero los archivos relacionados.
+2. Buscar referencias y usos existentes.
 3. Identificar el cambio mínimo necesario.
-4. Modificar solamente los archivos necesarios.
-5. Mantener funcionalidades anteriores.
-6. No realizar mejoras adicionales no solicitadas.
+4. Reutilizar componentes, hooks y servicios existentes.
+5. Modificar únicamente los archivos necesarios.
+6. Preservar todo comportamiento no relacionado.
+7. No realizar mejoras adicionales no solicitadas.
 
 ---
 
-# AL FINALIZAR UNA TAREA
+# AL FINALIZAR
 
-El agente debe informar brevemente:
+Indicar brevemente:
 
-1. Qué archivos modificó.
-2. Qué archivos creó.
-3. Qué funcionalidad implementó.
-4. Qué no pudo validar porque no puede ejecutar la aplicación.
-5. Qué debe probar manualmente el equipo.
-6. Si necesita algún cambio de backend o base de datos que deba realizar manualmente el equipo.
+1. Archivos modificados.
+2. Archivos creados.
+3. Qué se implementó.
+4. Qué debe probar manualmente el equipo.
+5. Si necesita algo del backend.
+6. Si necesita algo de MySQL.
 
-No afirmar:
-
-```text
-Everything works
-```
-
-si no pudo ejecutarlo.
-
-Puede decir, por ejemplo:
-
-```text
-The implementation is complete at code level.
-It still needs to be tested manually in the application.
-```
+No implementar esos puntos pendientes de backend o MySQL.
 
 ---
 
-# PRIORIDADES DEL PROYECTO
-
-Cuando existan varias formas de resolver una tarea, seguir este orden:
+# PRIORIDADES
 
 1. No romper lo existente.
-2. Cumplir exactamente lo solicitado.
-3. Hacer el cambio mínimo posible.
+2. Cumplir exactamente la tarea.
+3. Realizar el cambio mínimo.
 4. Mantener compatibilidad.
 5. Seguridad.
 6. Reutilizar código existente.
@@ -882,28 +628,22 @@ Cuando existan varias formas de resolver una tarea, seguir este orden:
 9. Optimización.
 10. Refactorización.
 
-La refactorización nunca debe tener prioridad sobre la estabilidad.
-
 ---
 
 # REGLA FINAL
 
-Si algo actualmente funciona y no forma parte de la tarea:
+**Codex trabaja únicamente sobre la aplicación React Native / Expo.**
 
-**NO LO CAMBIES.**
+**Codex puede leer, buscar, crear y modificar archivos de la aplicación.**
 
-Si una tarea requiere base de datos:
+**Codex NO trabaja sobre PHP.**
 
-**NO MODIFIQUES MYSQL. AVISA AL EQUIPO.**
+**Codex NO trabaja sobre MySQL.**
 
-Si una tarea requiere ejecutar un comando:
+**Codex NO ejecuta la aplicación, builds, npm, Expo, Gradle, Git, PHP ni MySQL.**
 
-**NO LO EJECUTES. AVISA AL EQUIPO.**
+**El equipo administra backend, base de datos, ejecución, pruebas y compilación.**
 
-Si existe una solución que requiere cambiar diez archivos y otra que requiere cambiar dos manteniendo el mismo comportamiento:
+Y por encima de todo:
 
-**PREFIERE LA SOLUCIÓN DE DOS ARCHIVOS.**
-
-El agente escribe y modifica el código necesario.
-
-El equipo ejecuta, prueba, compila y administra la base de datos.
+**SI ALGO YA FUNCIONA Y NO FORMA PARTE DE LA TAREA, NO LO CAMBIES.**
