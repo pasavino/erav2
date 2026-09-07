@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 // Screens
 import Profile from './Profile';
+import ChangePassword from './ChangePassword';
 import Car from './Car';
 import Publish from './Publish';
 import Home from './Home'; // Search page
@@ -114,6 +115,11 @@ function ProfileStack() {
         name="AddVehicle"
         component={AddVehicle}
         options={{ title: 'Add vehicle' }}
+      />
+      <ProfileStackNav.Screen
+        name="ChangePassword"
+        component={ChangePassword}
+        options={{ title: 'Change password' }}
       />
     </ProfileStackNav.Navigator>
   );

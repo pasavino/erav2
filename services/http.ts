@@ -53,7 +53,7 @@ const isFilePart = (v: any): v is FilePart => !!v && typeof v === 'object' &&
   typeof v.uri === 'string' && typeof v.name === 'string' && typeof v.type === 'string';
 
 // === Form-POST (application/x-www-form-urlencoded o multipart si hay archivo) ===
-export async function requestForm<T>(endpoint: string, data: Record<string, any>): Promise<ApiResponse<T>> {
+export async function requestForm<T>(endpoint: string, data: Record<string, any>, options: { includeTokenInBody?: boolean } = {}): Promise<ApiResponse<T>> {
   // console.log('[DEBUG] Requesting endpoint:', endpoint);
   // console.log('[DEBUG] With data:', JSON.stringify(data, null, 2));
 
@@ -82,12 +82,12 @@ export async function requestForm<T>(endpoint: string, data: Record<string, any>
       }
     });
     // también mandamos token en el cuerpo (como antes)
-    if (token) form.append('token', token);
+    if (token && options.includeTokenInBody !== false) form.append('token', token);
     body = form; // no seteamos Content-Type: fetch agrega el boundary
   } else {
     // ---------- x-www-form-urlencoded (comportamiento actual) ----------
     const entries = Object.entries(data || {});
-    if (token) entries.push(['token', token]); // token también en el BODY
+    if (token && options.includeTokenInBody !== false) entries.push(['token', token]); // token también en el BODY
     headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
     body = entries
       .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v ?? '')}`)

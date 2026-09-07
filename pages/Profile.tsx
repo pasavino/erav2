@@ -445,8 +445,10 @@ function AccountTab() {
       <NavItem title="My Trips" to="TravelHistory" />
       {/* <NavItem title="Trips to be taken or taken" to="TravelHistoryDriver" /> */}
       <NavItem title="Notifications" to="Notifications" />
+      <NavItem title="Change password" to="ChangePassword" />
       <NavItem title="Privacy & Terms" to="PrivacyTerms" />
       <NavItem title="About" to="About" />
+      
 
       <View style={{ height: 32 }} />
     </KeyboardAwareScrollView>
