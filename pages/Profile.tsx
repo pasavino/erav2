@@ -410,16 +410,20 @@ function AccountTab() {
   const onChangeMode = async (driver: boolean) => {
     const nextMode = driver ? 'driver' : 'passenger';
     if (!driverEnabled || checkingModeRef.current || nextMode === activeMode) return;
+    if (nextMode === 'driver') {
+      setActiveMode('driver');
+      return;
+    }
     checkingModeRef.current = true;
     setCheckingMode(true);
     try {
-      const out = await requestForm<{ CanChangeMode: 0 | 1 }>('/ax_can_change_mode.php', {});
+      const out = await requestForm<{ DriverRequired: 0 | 1 }>('/ax_can_change_mode.php', {});
       if (out.error !== 0) {
         setAlertMsg(out.msg || 'Could not change mode');
-      } else if (out.CanChangeMode === 1) {
-        setActiveMode(nextMode);
-      } else if (out.CanChangeMode === 0) {
-        setAlertMsg('You cannot change mode while you have an active or upcoming trip.');
+      } else if (out.DriverRequired === 0) {
+        setActiveMode('passenger');
+      } else if (out.DriverRequired === 1) {
+        setAlertMsg('You cannot switch to Passenger mode while you have an active or upcoming trip.');
       } else {
         setAlertMsg('Could not change mode');
       }

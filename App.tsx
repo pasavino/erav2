@@ -33,7 +33,7 @@ const theme = {
 type Mode = 'checking' | 'auth' | 'main';
 
 function Gate() {
-  const { token, loading = false, setDriverEnabled } = useAuth() as any;
+  const { token, loading = false, syncDriverMode } = useAuth() as any;
 
   const [mode, setMode] = useState<Mode>('checking');
 
@@ -52,7 +52,8 @@ function Gate() {
 
         const err = Number(out?.error ?? 1);
         if (err === 0) {
-          setDriverEnabled(out.DriverEnabled === 1);
+          await syncDriverMode(out.DriverEnabled === 1);
+          if (!alive) return;
           setMode('main'); // token válido
         } else {
           setMode('auth'); // token inválido -> Login
@@ -94,7 +95,7 @@ function Gate() {
     }
 
     return () => { alive = false; };
-  }, [token, loading, setDriverEnabled]);
+  }, [token, loading, syncDriverMode]);
 
   if (mode === 'checking') {
     return (

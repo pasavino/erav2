@@ -12,6 +12,7 @@ type AuthCtx = {
   loading: boolean;
   driverEnabled: boolean;
   setDriverEnabled: (enabled: boolean) => void;
+  syncDriverMode: (enabled: boolean) => Promise<void>;
   activeMode: ActiveMode;
   setActiveMode: (mode: ActiveMode) => void;
   // Alto nivel: hace la llamada al backend y setea token si OK
@@ -46,6 +47,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setActiveMode = (mode: ActiveMode) => {
     setPreferredMode(driverEnabled && mode === 'driver' ? 'driver' : 'passenger');
   };
+
+  const syncDriverMode = useCallback(async (enabled: boolean) => {
+    if (!enabled) {
+      setDriverEnabled(false);
+      return;
+    }
+    const out = await requestForm<{ DriverRequired: 0 | 1 }>('/ax_can_change_mode.php', {});
+    if (out.error !== 0) {
+      throw new Error(out.msg || 'Could not check required mode');
+    }
+    if (out.DriverRequired !== 0 && out.DriverRequired !== 1) {
+      throw new Error('Could not check required mode');
+    }
+    setDriverEnabled(true);
+    if (out.DriverRequired === 1) setPreferredMode('driver');
+  }, [setDriverEnabled]);
 
   useEffect(() => {
     (async () => {
@@ -111,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (validation.error !== 0) {
         throw new Error(validation.msg || validation.message || 'Could not validate session');
       }
-      setDriverEnabled(validation.DriverEnabled === 1);
+      await syncDriverMode(validation.DriverEnabled === 1);
       await login((res as any).token as string);
     }
     return res;
@@ -124,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         driverEnabled,
         setDriverEnabled,
+        syncDriverMode,
         activeMode,
         setActiveMode,
         signIn,
