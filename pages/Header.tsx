@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, Pressable, Modal } from 'react-native';
 import { useAuth } from '../context/Auth';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const HEADER_BG = '#f4a040ff';
 
@@ -45,10 +46,18 @@ function HeaderMenu() {
 }
 
 export default function Header() {
+  const { activeMode } = useAuth();
   return (
     <View style={styles.header}>
       <Image source={require('../assets/logoera.png')} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.title}>Easy Ride Africa</Text>
+      <Text style={styles.title} numberOfLines={1}>Easy Ride Africa</Text>
+      <MaterialCommunityIcons
+        name={activeMode === 'driver' ? 'steering' : 'bag-suitcase'}
+        size={18}
+        color="#fff"
+        style={styles.modeIcon}
+        accessibilityLabel={activeMode === 'driver' ? 'Driver mode' : 'Passenger mode'}
+      />
       <View style={{ flex: 1 }} />
       <HeaderMenu />
     </View>
@@ -69,5 +78,6 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   logo: { width: 110, height: 40, marginRight: 10 },
-  title: { fontSize: 18, fontWeight: '700', color: '#fff' },
+  title: { fontSize: 18, fontWeight: '700', color: '#fff', flexShrink: 1 },
+  modeIcon: { marginLeft: 6, flexShrink: 0 },
 });

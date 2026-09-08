@@ -5,6 +5,8 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
 import Boton from '../components/boton2';
 import AppModal from '../components/appModal';
+import AppAlert from '../components/appAlert';
+import { useAuth } from '../context/Auth';
 import Options from '../components/option'; // Importar el nuevo componente
 import { requestForm } from '../services/http';
 
@@ -40,6 +42,8 @@ const yn = (v: any) => {
 };
 
 export default function BookTrip() {
+  const { activeMode } = useAuth();
+  const [modeAlert, setModeAlert] = useState<string | null>(null);
   const route = useRoute<any>();
   const trip = route.params?.trip || {};
   const navigation = useNavigation<any>();
@@ -138,6 +142,10 @@ export default function BookTrip() {
   }, [tripUnit, bagUnit, count, bagsCount, maxBags]);
 
   const onBook = async () => {
+    if (activeMode === 'driver') {
+      setModeAlert('Switch to Passenger mode to book a ride.');
+      return;
+    }
     if (loadingPrefs || sending) return;
 
     // Resolvemos el id del registro del viaje
@@ -309,7 +317,7 @@ export default function BookTrip() {
         </View>
 
         {/* Botón Book */}
-        <View style={{ marginTop: 16 }}>
+        <View style={[{ marginTop: 16 }, activeMode === 'driver' && styles.modeDisabled]}>
           <Boton            
             disabled={actionDisabled || maxPassengers <= 0}
             label={loadingPrefs ? 'Loading…' : (sending ? 'Booking…' : 'Book')}
@@ -326,6 +334,7 @@ export default function BookTrip() {
           iconName={alertVariant === 'success' ? 'checkmark-circle' : undefined}
         />
       </ScrollView>
+      {!!modeAlert && <AppAlert message={modeAlert} onClose={() => setModeAlert(null)} />}
     </View>
   );
 }
@@ -333,6 +342,7 @@ export default function BookTrip() {
 const AVATAR_SIZE = 96;
 
 const styles = StyleSheet.create({
+  modeDisabled: { opacity: 0.7 },
   container: { flex: 1, padding: 16, backgroundColor: '#fff' },
   title: { fontSize: 22, fontWeight: '600', marginBottom: 20, textAlign: 'center' },
   content: { paddingBottom: 24 },

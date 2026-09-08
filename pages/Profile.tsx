@@ -1,6 +1,6 @@
 // /pages/Profile.tsx
-import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Switch } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as ImagePicker from 'expo-image-picker';
@@ -400,16 +400,50 @@ function PersonalInfoTab() {
 /* -------- Account (links de Settings) -------- */
 function AccountTab() {
   const navigation = useNavigation<any>();
+  const { driverEnabled, activeMode, setActiveMode } = useAuth();
   const { loading, data, error, setError } = useProfileData();
   const [inlineInfo, setInlineInfo] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [checkingMode, setCheckingMode] = useState(false);
+  const checkingModeRef = useRef(false);
+
+  const onChangeMode = async (driver: boolean) => {
+    const nextMode = driver ? 'driver' : 'passenger';
+    if (!driverEnabled || checkingModeRef.current || nextMode === activeMode) return;
+    checkingModeRef.current = true;
+    setCheckingMode(true);
+    try {
+      const out = await requestForm<{ CanChangeMode: 0 | 1 }>('/ax_can_change_mode.php', {});
+      if (out.error !== 0) {
+        setAlertMsg(out.msg || 'Could not change mode');
+      } else if (out.CanChangeMode === 1) {
+        setActiveMode(nextMode);
+      } else if (out.CanChangeMode === 0) {
+        setAlertMsg('You cannot change mode while you have an active or upcoming trip.');
+      } else {
+        setAlertMsg('Could not change mode');
+      }
+    } catch (error: unknown) {
+      setAlertMsg(error instanceof Error ? error.message : 'Network error');
+    } finally {
+      checkingModeRef.current = false;
+      setCheckingMode(false);
+    }
+  };
 
   // ---- Helper para “links” de navegación ----
-  const NavItem = ({ title, to, rightText }: { title: string; to: string; rightText?: string }) => (
+  const NavItem = ({ title, to, rightText, requiresDriver = false }: { title: string; to: string; rightText?: string; requiresDriver?: boolean }) => (
     <TouchableOpacity
-      onPress={() => navigation.navigate(to)}
-      style={[styles.row, { justifyContent: 'space-between' }]}
+      onPress={() => {
+        if (requiresDriver && (!driverEnabled || activeMode !== 'driver')) {
+          setAlertMsg('Switch to Driver mode to use this option.');
+          return;
+        }
+        navigation.navigate(to);
+      }}
+      style={[styles.row, { justifyContent: 'space-between' }, requiresDriver && activeMode !== 'driver' && styles.modeDisabled]}
       accessibilityRole="button"
+      accessibilityState={{ disabled: requiresDriver && (!driverEnabled || activeMode !== 'driver') }}
     >
       <Text style={{ flex: 1 }}>{title}</Text>
       <Text style={{ opacity: 0.5 }}>{rightText ?? '›'}</Text>
@@ -437,12 +471,27 @@ function AccountTab() {
       <View style={{ height: 24 }} />
       <Text style={styles.sectionTitle}>Settings</Text>
 
+      {driverEnabled && (
+        <View style={[styles.row, styles.modeRow]}>
+          <Text style={styles.modeLabel}>Mode</Text>
+          <Text>Passenger</Text>
+          <Switch
+            value={activeMode === 'driver'}
+            onValueChange={onChangeMode}
+            disabled={checkingMode}
+            accessibilityLabel="Driver mode"
+            trackColor={{ true: '#f4a040ff' }}
+          />
+          <Text>Driver</Text>
+        </View>
+      )}
+
       {/* LINKS / ACCESOS a otras pantallas */}
-      <NavItem title="My vehicles" to="Car" />
-      <NavItem title="Trip preferences" to="TripPreferences" />
+      {driverEnabled && <NavItem title="My vehicles" to="Car" requiresDriver />}
+      {driverEnabled && <NavItem title="Trip preferences" to="TripPreferences" requiresDriver />}
       <NavItem title="My wallet" to="MyWallet" />
       <NavItem title="Bank account" to="BankAccount" />
-      <NavItem title="My Trips" to="TravelHistory" />
+      <NavItem title="My Trips" to={activeMode === 'driver' ? 'TravelHistoryDriver' : 'TravelHistory'} />
       {/* <NavItem title="Trips to be taken or taken" to="TravelHistoryDriver" /> */}
       <NavItem title="Notifications" to="Notifications" />
       <NavItem title="Change password" to="ChangePassword" />
@@ -466,6 +515,9 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, fontWeight: '700' },
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  modeRow: { gap: 8 },
+  modeLabel: { flex: 1 },
+  modeDisabled: { opacity: 0.7 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   inlineInfo: { color: '#08660b', marginBottom: 8 },
   fullscreenOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)', alignItems: 'center', justifyContent: 'center' },

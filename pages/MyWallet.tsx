@@ -21,6 +21,7 @@ import Boton from '../components/boton';
 import Input from '../components/input';
 import AppAlert from '../components/appAlert';
 import AppModal from '../components/appModal';
+import { useAuth } from '../context/Auth';
 
 type MyWalletItem = {
   WalletDriver: number;
@@ -73,6 +74,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const MyWallet: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { activeMode, driverEnabled } = useAuth();
+  const passengerMode = activeMode === 'passenger';
+  const driverMode = driverEnabled && activeMode === 'driver';
   const [loading, setLoading] = useState<boolean>(false);
   const [refreshing, setRefreshing] = useState<boolean>(false);
 
@@ -142,14 +146,26 @@ const MyWallet: React.FC = () => {
   );
 
   const handleViewTravelerHistory = () => {
+    if (!passengerMode) {
+      setAlertMsg('Switch to Passenger mode to use this option.');
+      return;
+    }
     navigation.navigate('MyWalletLog', { logType: 'P' });
   };
 
   const handleViewDriverHistory = () => {
+    if (!driverMode) {
+      setAlertMsg('Switch to Driver mode to use this option.');
+      return;
+    }
     navigation.navigate('MyWalletLog', { logType: 'D' });
   };
 
   const handleTransferToPassengerWallet = () => {
+    if (!passengerMode) {
+      setAlertMsg('Switch to Passenger mode to use this option.');
+      return;
+    }
     if (walletDriver <= 0 || paystackBusy) return;
     setAmountMode('TRANSFER');
     setAmount('');
@@ -161,6 +177,10 @@ const MyWallet: React.FC = () => {
   // RECHARGE: flujo principal
   // ----------------------------
   const openRecharge = () => {
+    if (!passengerMode) {
+      setAlertMsg('Switch to Passenger mode to use this option.');
+      return;
+    }
     setAmountMode('TOPUP');
     setAmount('');
     setAmountErr('');
@@ -340,7 +360,7 @@ const MyWallet: React.FC = () => {
         ) : (
           <>
             {/* Traveler card */}
-            <View style={styles.card}>
+            <View style={[styles.card, !passengerMode && styles.modeDisabled]}>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>Traveler</Text>
                 <Text
@@ -354,7 +374,8 @@ const MyWallet: React.FC = () => {
             </View>
 
             {/* Driver card */}
-            <View style={styles.card}>
+            {driverEnabled && (
+            <View style={[styles.card, !driverMode && styles.modeDisabled]}>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>Driver</Text>
                 <Text
@@ -366,15 +387,22 @@ const MyWallet: React.FC = () => {
               </View>
               <Text style={styles.amountText}>{naira(walletDriver)}</Text>
             </View>
+            )}
 
             {/* Buttons */}
             <View
               style={[styles.buttonsContainer, disabledWhilePaystack && { opacity: 0.6 }]}
             >
               {/* No cambiamos estilo: sólo bloqueamos el touch si no hay saldo */}
+              {driverEnabled && (
+              <View style={!passengerMode && styles.modeDisabled}>
               <Boton label="Transfer to passenger wallet" onPress={handleTransferToPassengerWallet} />
               <View style={{ height: 12 }} />
+              </View>
+              )}
+              <View style={!passengerMode && styles.modeDisabled}>
               <Boton label="Recharge wallet credit/debit card" onPress={openRecharge} />
+              </View>
 
               {confirming ? (
                 <View style={styles.confirmBox}>
@@ -541,6 +569,7 @@ const styles = StyleSheet.create({
   amountText: { fontSize: 20, fontWeight: '700', color: '#111827' },
 
   buttonsContainer: { marginTop: 24 },
+  modeDisabled: { opacity: 0.7 },
 
   confirmBox: {
     marginTop: 14,

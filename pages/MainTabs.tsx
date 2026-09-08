@@ -1,8 +1,11 @@
 // pages/MainTabs.tsx
-import React from 'react';
+import React, { useState } from 'react';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../context/Auth';
+import AppAlert from '../components/appAlert';
 
 // Screens
 import Profile from './Profile';
@@ -94,13 +97,11 @@ function ProfileStack() {
         options={{ headerTitle: 'My Trips' }}
       />
 
-      {/*
       <ProfileStackNav.Screen
         name="TravelHistoryDriver"             
         component={TravelHistoryDriver}
         options={{ headerTitle: 'Trips to be taken or taken' }}
       />
-      */}
       <ProfileStackNav.Screen
         name="Notifications"             
         component={Notifications}
@@ -126,14 +127,28 @@ function ProfileStack() {
 }
 
 export default function MainTabs() {
+  const { activeMode, driverEnabled } = useAuth();
+  const [modeAlert, setModeAlert] = useState<string | null>(null);
   return (
+    <>
     <Tab.Navigator
+      screenListeners={({ route }) => ({
+        tabPress: (event) => {
+          if ((route.name === 'Publish ride' || route.name === 'TripManager') &&
+              (!driverEnabled || activeMode !== 'driver')) {
+            event.preventDefault();
+            setModeAlert('Switch to Driver mode to use this option.');
+          }
+        },
+      })}
       initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarLabelStyle: { fontSize: 12 },
         tabBarHideOnKeyboard: false,
         tabBarStyle: { height: 100 },
+        tabBarItemStyle: (route.name === 'Publish ride' || route.name === 'TripManager') && activeMode !== 'driver'
+          ? styles.modeDisabled : undefined,
         tabBarActiveTintColor: '#111',
         tabBarInactiveTintColor: '#9aa0a6',
         tabBarIcon: ({ focused, size, color }) => {
@@ -148,9 +163,15 @@ export default function MainTabs() {
     >
       {/* Orden: 1-Home, 2-Publish ride, 3-Trip Manager, 4-Profile */}
       <Tab.Screen name="Home" component={HomeStack} options={{ tabBarLabel: 'Home' }} />
-      <Tab.Screen name="Publish ride" component={Publish} options={{ tabBarLabel: 'Publish ride' }} />
-      <Tab.Screen name="TripManager" component={TripStack} options={{ tabBarLabel: 'Trip Manager' }} />
+      {driverEnabled && <Tab.Screen name="Publish ride" component={Publish} options={{ tabBarLabel: 'Publish ride' }} />}
+      {driverEnabled && <Tab.Screen name="TripManager" component={TripStack} options={{ tabBarLabel: 'Trip Manager' }} />}
       <Tab.Screen name="Profile" component={ProfileStack} options={{ tabBarLabel: 'Profile' }} />      
     </Tab.Navigator>
+    {!!modeAlert && <AppAlert message={modeAlert} onClose={() => setModeAlert(null)} />}
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  modeDisabled: { opacity: 0.7 },
+});

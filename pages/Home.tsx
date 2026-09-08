@@ -37,6 +37,8 @@ export default function Home({ navigation }: any) {
   let w = Math.min(winW - 32, 480);
   let h = Math.round(w / ratio);
   if (h > maxH) { h = maxH; w = Math.round(h * ratio); }
+  h = Math.max(1, h - 12);
+  w = h * ratio;
 
   // Estado
   const [fromOpt, setFromOpt] = useState<Option[]>([]);
