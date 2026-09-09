@@ -6,13 +6,14 @@ import { auth as authApi, type LoginExtra } from '../services/auth';
 import type { ApiResponse } from '../services/http';
 
 export type ActiveMode = 'passenger' | 'driver';
+export type SessionMode = { DriverEnabled: 0 | 1; ActiveMode: 'P' | 'D'; message?: string };
 
 type AuthCtx = {
   token: string | null;
   loading: boolean;
   driverEnabled: boolean;
   setDriverEnabled: (enabled: boolean) => void;
-  syncDriverMode: (enabled: boolean) => Promise<void>;
+  syncDriverMode: (enabled: boolean, mode: SessionMode['ActiveMode']) => Promise<void>;
   activeMode: ActiveMode;
   setActiveMode: (mode: ActiveMode) => void;
   // Alto nivel: hace la llamada al backend y setea token si OK
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setPreferredMode(driverEnabled && mode === 'driver' ? 'driver' : 'passenger');
   };
 
-  const syncDriverMode = useCallback(async (enabled: boolean) => {
+  const syncDriverMode = useCallback(async (enabled: boolean, mode: SessionMode['ActiveMode']) => {
     if (!enabled) {
       setDriverEnabled(false);
       return;
@@ -60,21 +61,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (out.DriverRequired !== 0 && out.DriverRequired !== 1) {
       throw new Error('Could not check required mode');
     }
+    if (out.DriverRequired === 0 && mode !== 'D' && mode !== 'P') {
+      throw new Error('Could not determine active mode');
+    }
+    setPreferredMode(out.DriverRequired === 1 || mode === 'D' ? 'driver' : 'passenger');
     setDriverEnabled(true);
-    if (out.DriverRequired === 1) setPreferredMode('driver');
   }, [setDriverEnabled]);
 
   useEffect(() => {
     (async () => {
       const t = await AsyncStorage.getItem('AUTH_TOKEN');
-      if (t) {
-        try {
-          const storedMode = await AsyncStorage.getItem('ACTIVE_MODE');
-          setPreferredMode(storedMode === 'driver' ? 'driver' : 'passenger');
-        } catch (error: unknown) {
-          console.warn('Could not restore active mode', error);
-        }
-      }
       if (t) {
         setToken(t);
         setAuthToken(t);
@@ -84,13 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     })();
   }, []);
-
-  useEffect(() => {
-    if (loading) return;
-    AsyncStorage.setItem('ACTIVE_MODE', preferredMode).catch((error: unknown) => {
-      console.warn('Could not save active mode', error);
-    });
-  }, [loading, preferredMode]);
 
   const login = async (tok: string) => {
     await AsyncStorage.setItem('AUTH_TOKEN', tok);
@@ -122,13 +111,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const res = await authApi.login(email, password);
     // Espera: { error: 0|1, msg, token?, user? }
     if (!res.error && (res as any).token) {
-      const validation = await requestForm<{ DriverEnabled: 0 | 1; message?: string }>(
+      const validation = await requestForm<SessionMode>(
         '/ax_validate.php', {}
       );
       if (validation.error !== 0) {
         throw new Error(validation.msg || validation.message || 'Could not validate session');
       }
-      await syncDriverMode(validation.DriverEnabled === 1);
+      await syncDriverMode(validation.DriverEnabled === 1, validation.ActiveMode);
       await login((res as any).token as string);
     }
     return res;

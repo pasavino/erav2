@@ -12,7 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import Register from './pages/Register';
 import TripFindResult from './pages/TripFindResult'; // ya lo tenías importado
 import BankAccount from './pages/BankAccount';
-import { AuthProvider, useAuth } from './context/Auth';
+import { AuthProvider, useAuth, type SessionMode } from './context/Auth';
 import BookTrip from './pages/BookTrip';
 //import TravelHistory from './pages/TravelHistory';
 
@@ -33,7 +33,7 @@ const theme = {
 type Mode = 'checking' | 'auth' | 'main';
 
 function Gate() {
-  const { token, loading = false, syncDriverMode } = useAuth() as any;
+  const { token, loading = false, syncDriverMode } = useAuth();
 
   const [mode, setMode] = useState<Mode>('checking');
 
@@ -47,12 +47,12 @@ function Gate() {
       try {
         // usamos tu http.ts para que ponga el header correcto
         setAuthToken(tok);
-        const out: any = await requestForm('/ax_validate.php', {}); // { error: 0 } => OK
+        const out = await requestForm<SessionMode>('/ax_validate.php', {}); // { error: 0 } => OK
         if (!alive) return;
 
         const err = Number(out?.error ?? 1);
         if (err === 0) {
-          await syncDriverMode(out.DriverEnabled === 1);
+          await syncDriverMode(out.DriverEnabled === 1, out.ActiveMode);
           if (!alive) return;
           setMode('main'); // token válido
         } else {
