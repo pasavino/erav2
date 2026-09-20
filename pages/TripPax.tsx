@@ -1,6 +1,7 @@
 // pages/TripPax.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Linking } from 'react-native';
+import { View, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Linking } from 'react-native';
+import { Text } from '../components/typography';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { rides } from '../services/rides';
 import AppModal from '../components/appModal';

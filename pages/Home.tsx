@@ -1,8 +1,9 @@
 // /pages/Home.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  View, Text, StyleSheet, ActivityIndicator, Image, useWindowDimensions
+  View, StyleSheet, ActivityIndicator, Image, useWindowDimensions
 } from 'react-native';
+import { Text } from '../components/typography';
 
 import Boton from '../components/boton';
 import AppAlert from '../components/appAlert';

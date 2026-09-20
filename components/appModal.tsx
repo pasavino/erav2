@@ -3,11 +3,11 @@ import React from 'react';
 import {
   Modal,
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { Text } from './typography';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 export type ModalAction = {

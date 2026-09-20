@@ -3,11 +3,11 @@ import React, { useMemo, useState } from 'react';
 import {
   Modal,
   View,
-  Text,
   TouchableOpacity,
   FlatList,
   StyleSheet,
 } from 'react-native';
+import { Text } from './typography';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export type ComboItem = { label: string; value: string };

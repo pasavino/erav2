@@ -2,7 +2,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   ActivityIndicator,
@@ -10,6 +9,7 @@ import {
   Modal,
   TouchableOpacity,
 } from 'react-native';
+import { Text } from '../components/typography';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 

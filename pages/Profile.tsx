@@ -1,6 +1,8 @@
 // /pages/Profile.tsx
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Switch } from 'react-native';
+import { View, Image, StyleSheet, TouchableOpacity, ActivityIndicator, Switch } from 'react-native';
+import { Text } from '../components/typography';
+import { robotoStyle } from '../lib/fonts';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import * as ImagePicker from 'expo-image-picker';
@@ -29,7 +31,7 @@ export default function Profile() {
       <Tab.Navigator
         screenOptions={{
           tabBarIndicatorStyle: { height: 3 },
-          tabBarLabelStyle: { fontWeight: '600' },
+          tabBarLabelStyle: robotoStyle('600'),
           tabBarStyle: { backgroundColor: '#fff' },
         }}
       >
@@ -472,15 +474,16 @@ function AccountTab() {
       {driverEnabled && (
         <View style={[styles.row, styles.modeRow]}>
           <Text style={styles.modeLabel}>Mode</Text>
-          <Text>Passenger</Text>
+          <Text style={styles.modeText}>Passenger</Text>
           <Switch
             value={activeMode === 'driver'}
             onValueChange={onChangeMode}
             disabled={checkingMode}
             accessibilityLabel="Driver mode"
-            trackColor={{ true: '#f4a040ff' }}
+            trackColor={{ false: '#767577', true: '#f4a040ff' }}
+            thumbColor="#FFFFFF"
           />
-          <Text>Driver</Text>
+          <Text style={styles.modeText}>Driver</Text>
         </View>
       )}
 
@@ -514,7 +517,8 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   modeRow: { gap: 8 },
-  modeLabel: { flex: 1 },
+  modeLabel: { flex: 1, color: '#111' },
+  modeText: { color: '#111' },
   modeDisabled: { opacity: 0.7 },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   inlineInfo: { color: '#08660b', marginBottom: 8 },

@@ -1,4 +1,5 @@
-import { Text, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { Text } from './typography';
 
 interface Props {
   label: string;

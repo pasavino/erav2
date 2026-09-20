@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   StyleSheet,
   Pressable,
   type TextInputProps,
   type KeyboardTypeOptions,
 } from 'react-native';
+import { Text, TextInput } from './typography';
 
 export type InputProps = {
   label?: string;

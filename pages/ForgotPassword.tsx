@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Text,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -12,6 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { Text } from '../components/typography';
 import { useNavigation } from '@react-navigation/native';
 import Boton from '../components/boton';
 import Input from '../components/input';

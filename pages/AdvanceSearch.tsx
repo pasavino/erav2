@@ -1,6 +1,7 @@
 // pages/AdvanceSearch.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Text } from '../components/typography';
 import Select from '../components/select';
 import DatePicker from '../components/datePicker';
 import Input from '../components/input';

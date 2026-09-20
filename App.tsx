@@ -1,7 +1,9 @@
 // /App.tsx
 import 'react-native-gesture-handler';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useFonts } from 'expo-font';
+import { ROBOTO_FONTS, robotoStyle } from './lib/fonts';
 import { DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -23,6 +25,12 @@ const Stack = createNativeStackNavigator();
 
 const theme = {
   ...DefaultTheme,
+  fonts: {
+    regular: robotoStyle('400'),
+    medium: robotoStyle('500'),
+    bold: robotoStyle('600'),
+    heavy: robotoStyle('700'),
+  },
   colors: {
     ...DefaultTheme.colors,
     background: '#fff',
@@ -132,6 +140,37 @@ function Gate() {
 }
 
 export default function App() {
+  const [fontsLoaded, fontError] = useFonts(ROBOTO_FONTS);
+  const [fontLoadTimedOut, setFontLoadTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) return;
+    const timeout = setTimeout(() => setFontLoadTimedOut(true), 15000);
+    return () => clearTimeout(timeout);
+  }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    if (fontError) console.error('Could not load local Roboto fonts:', fontError);
+  }, [fontError]);
+
+  if (fontError || (fontLoadTimedOut && !fontsLoaded)) {
+    return (
+      <View style={styles.fontLoading}>
+        <Text style={styles.fontError} accessibilityRole="alert">
+          Could not load app fonts. Please close and reopen the app.
+        </Text>
+      </View>
+    );
+  }
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.fontLoading}>
+        <ActivityIndicator color="#023c69" />
+      </View>
+    );
+  }
+
   return (
     <AuthProvider>
       <NavigationContainer theme={theme}>
@@ -142,3 +181,8 @@ export default function App() {
     </AuthProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  fontLoading: { flex: 1, backgroundColor: '#fff', justifyContent: 'center', alignItems: 'center' },
+  fontError: { color: '#111827', textAlign: 'center', padding: 24 },
+});

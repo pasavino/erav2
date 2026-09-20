@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { Text } from './typography';
 
 export type Ride = {
   id: string;

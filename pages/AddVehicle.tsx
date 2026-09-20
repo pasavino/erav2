@@ -1,6 +1,7 @@
 // pages/Vehicles.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator, Platform, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, Pressable, ActivityIndicator, Platform, Alert } from 'react-native';
+import { Text } from '../components/typography';
 import { useNavigation } from '@react-navigation/native';
 
 import Boton from '../components/boton';

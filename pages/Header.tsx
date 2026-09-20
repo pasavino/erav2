@@ -1,6 +1,7 @@
 // /pages/Header.tsx
 import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, Modal } from 'react-native';
+import { View, Image, StyleSheet, Pressable, Modal } from 'react-native';
+import { Text } from '../components/typography';
 import { useAuth } from '../context/Auth';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 

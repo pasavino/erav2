@@ -2,13 +2,12 @@ import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
   Modal,
   ScrollView,
-  Text,
-  TextInput,
   TouchableOpacity,
   View,
   FlatList,
   ActivityIndicator,
 } from "react-native";
+import { Text, TextInput } from '../components/typography';
 import { useNavigation } from "@react-navigation/native";
 
 import Input from "../components/input";
@@ -257,7 +256,9 @@ export default function BankAccount() {
             value={bankQuery}
             onChangeText={setBankQuery}
             placeholder="Search bank..."
+            placeholderTextColor="#9CA3AF"
             style={{
+              color: '#111827',
               borderWidth: 1,
               borderColor: "#ddd",
               borderRadius: 10,

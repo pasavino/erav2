@@ -3,12 +3,11 @@ import React from 'react';
 import {
   Modal,
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  TextInput,
 } from 'react-native';
+import { Text, TextInput } from './typography';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ModalAction, AppModalProps } from './appModal'; // Reutilizamos los tipos
 import Input from './input';

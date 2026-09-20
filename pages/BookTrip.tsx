@@ -1,6 +1,7 @@
 // /pages/BookTrip.tsx
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { Text } from '../components/typography';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
 import Boton from '../components/boton2';

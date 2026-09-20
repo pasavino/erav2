@@ -1,7 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
@@ -12,8 +11,10 @@ import {
   Platform,
   type KeyboardTypeOptions,
 } from 'react-native';
+import { Text } from '../components/typography';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { WebView } from 'react-native-webview';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 import { requestForm } from '../services/http';
@@ -74,6 +75,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const MyWallet: React.FC = () => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const { activeMode, driverEnabled } = useAuth();
   const passengerMode = activeMode === 'passenger';
   const driverMode = driverEnabled && activeMode === 'driver';
@@ -492,7 +494,7 @@ const MyWallet: React.FC = () => {
 
       {/* Modal: Paystack checkout */}
       <Modal visible={checkoutVisible} animationType="slide">
-        <View style={styles.checkoutHeader}>
+        <View style={[styles.checkoutHeader, { marginTop: insets.top + 8 }]}>
           <Pressable onPress={closeCheckout} style={styles.closeBtn}>
             <Text style={styles.closeText}>Close</Text>
           </Pressable>

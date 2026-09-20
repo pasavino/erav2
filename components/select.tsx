@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, View, Text, Pressable, FlatList } from 'react-native';
+import { Modal, View, Pressable, FlatList } from 'react-native';
+import { Text } from './typography';
 
 export type Option = { label: string; value: string };
 

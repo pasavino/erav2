@@ -1,5 +1,6 @@
 import React from "react";
-import { Modal, View, Text, Pressable } from "react-native";
+import { Modal, View, Pressable } from "react-native";
+import { Text } from './typography';
 
 export type AlertVariant = "error" | "success" | "info";
 

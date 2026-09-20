@@ -2,7 +2,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ActivityIndicator,
   FlatList,
@@ -12,6 +11,8 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
+import { Text } from '../components/typography';
+import { robotoStyle } from '../lib/fonts';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useFocusEffect } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -757,7 +758,7 @@ export default function Publish() {
       initialRouteName="Published"
       screenOptions={{
         tabBarIndicatorStyle: { backgroundColor: '#333' },
-        tabBarLabelStyle: { fontWeight: '600' },
+        tabBarLabelStyle: robotoStyle('600'),
       }}
     >
       <Tab.Screen name="Published" component={PublishedListTab} />

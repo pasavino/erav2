@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   ActivityIndicator,
@@ -9,6 +8,7 @@ import {
   Image,
   RefreshControl,
 } from 'react-native';
+import { Text } from '../components/typography';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { viewAllTripsService } from '../services/viewAllTrips';
 import type { Trip } from '../services/viewAllTrips';

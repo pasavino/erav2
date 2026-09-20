@@ -1,6 +1,7 @@
 // /pages/Login.tsx
 import { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, useWindowDimensions, TouchableOpacity } from 'react-native';
+import { Text } from '../components/typography';
 import { useNavigation } from '@react-navigation/native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import Boton from '../components/boton';
